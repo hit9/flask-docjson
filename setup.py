@@ -108,7 +108,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=['Flask'],
+    install_requires=['Flask', 'ply'],
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
