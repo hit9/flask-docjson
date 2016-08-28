@@ -10,6 +10,7 @@
 """
 
 import ctypes
+from flask import request
 from ply import lex, yacc
 
 __version__ = '0.0.1'
@@ -58,6 +59,8 @@ M_GET = 2
 M_PUT = 3
 M_DELETE = 4
 M_PATCH = 5
+M_HEAD = 6
+M_OPTIONS = 7
 
 
 ###
@@ -74,6 +77,8 @@ tokens = (
     'PUT',
     'DELETE',
     'PATCH',
+    'HEAD',
+    'OPTIONS',
     'ELLIPSIS',
     'BOOL',
     'U8',
@@ -126,6 +131,18 @@ def t_DELETE(t):
     r'DELETE'
     t.value = M_DELETE
     return t
+
+
+def t_HEAD(t):
+    r'HEAD'
+    t.value = M_HEAD
+    return t
+
+
+def t_OPTIONS(t):
+    r'OPTIONS'
+    t.value = M_OPTIONS
+    return
 
 
 def t_ELLIPSIS(t):
@@ -296,7 +313,9 @@ def p_method(p):
               | GET
               | PUT
               | DELETE
-              | PATCH'''
+              | PATCH
+              | HEAD
+              | OPTIONS'''
     p[0] = p[1]
 
 
@@ -305,12 +324,12 @@ def p_route(p):
              |'''
     if len(p) == 3:
         if p[2][1]:
-            p[0] = [p[1][0] + p[2][0] + '<' + p[2][1][0] + '>',
-                    p[1][1] + [p[2][1]]]
+            dct = dict(p[1][1].items() + [p[2][1]])
+            p[0] = [p[1][0] + p[2][0] + '<' + p[2][1][0] + '>', dct]
         else:
             p[0] = [p[1][0] + p[2][0], p[1][1]]
     elif len(p) == 1:
-        p[0] = ['', []]
+        p[0] = ['', {}]
 
 
 def p_route_item(p):
@@ -460,82 +479,174 @@ def parse(data):
 
 def validate_bool(val):
     if isinstance(val, bool):
-        return True
+        return
     raise ValidationError
 
 
 def validate_u8(val):
-    if isinstance(val, int):
-        if ctypes.c_uint8(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_uint8(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_u16(val):
-    if isinstance(val, int):
-        if ctypes.c_uint16(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_uint16(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_u32(val):
-    if isinstance(val, int):
-        if ctypes.c_uint32(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_uint32(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_u64(val):
-    if isinstance(val, int):
-        if ctypes.c_uint64(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_uint64(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_i8(val):
-    if isinstance(val, int):
-        if ctypes.c_int8(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_int8(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_i16(val):
-    if isinstance(val, int):
-        if ctypes.c_int16(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_int16(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_i32(val):
-    if isinstance(val, int):
-        if ctypes.c_int32(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_int32(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_i64(val):
-    if isinstance(val, int):
-        if ctypes.c_int64(val).value == val:
-            return True
+    if isinstance(val, int) and ctypes.c_int64(val).value == val:
+        return
     raise ValidationError
 
 
 def validate_float(val):
     if isinstance(val, (int, float)):
-        return True
+        return
     raise ValidationError
 
 
-def validate_string(val):
+def validate_string(val, typ):
     if isinstance(val, str):
-        return True
+        if typ[1] is None or len(val) <= typ[1]:
+            return
     raise ValidationError
 
 
-with open('test') as f:
-    data = f.read()
-    schema = parse(data)
-    schema = parse(data)
-    schema = parse(data)
-    import IPython
-    IPython.embed()
+def validate_type(val, typ):
+    if typ == T_BOOL:
+        return validate_bool(val)
+    elif typ == T_U8:
+        return validate_u8(val)
+    elif typ == T_U16:
+        return validate_u16(val)
+    elif typ == T_U32:
+        return validate_u32(val)
+    elif typ == T_U64:
+        return validate_u64(val)
+    elif typ == T_I8:
+        return validate_i8(val)
+    elif typ == T_I16:
+        return validate_i16(val)
+    elif typ == T_I32:
+        return validate_i32(val)
+    elif typ == T_I64:
+        return validate_i64(val)
+    elif typ == T_FLOAT:
+        return validate_float(val)
+    elif isinstance(typ, tuple) and typ[0] == T_STRING:
+        return validate_string(val, typ)
+
+
+def validate_array(val, typ):
+    if not isinstance(val, list):
+        raise ValidationError
+    if not typ:
+        return
+    for i, ityp in enumerate(typ):
+        if ityp == S_ELLIPSIS:
+            ityp = typ[i-1]
+            while i < len(val):
+                ival = val[i]
+                i += 1
+                validate_value(ival, ityp)
+            break
+        else:
+            if i >= len(val):
+                raise ValidationError
+            ival = val[i]
+            validate_value(ival, ityp)
+
+
+def validate_object(val, typ):
+    if not isinstance(val, dict):
+        raise ValidationError
+    for key, ityp in typ.items():
+        if key not in val:
+            raise ValidationError
+        ival = val[key]
+        validate_value(ival, ityp)
+
+
+def validate_value(val, typ):
+    if isinstance(typ, dict):
+        validate_object(val, typ)
+    elif isinstance(typ, list):
+        validate_array(val, typ)
+    else:
+        validate_type(val, typ)
+
+
+def validate_json(val, typ):
+    if isinstance(typ, list):
+        return validate_array(val, typ)
+    elif isinstance(typ, dict):
+        return validate_object(val, typ)
+    raise ValidationError
+
+
+def validate_method(typ):
+    name = request.method
+    if name == 'POST' and M_POST in typ:
+        return
+    elif name == 'GET' and M_GET in typ:
+        return
+    elif name == 'PUT' and M_PUT in typ:
+        return
+    elif name == 'DELETE' and M_DELETE in typ:
+        return
+    elif name == 'PATCH' and M_PATCH in typ:
+        return
+    elif name == 'HEAD' and M_HEAD in typ:
+        return
+    elif name == 'OPTIONS' and M_OPTIONS in typ:
+        return
+    raise ValidationError
+
+
+def validate_route(typ):
+    args = request.view_args
+    args_typ = typ[1]
+    for key, ityp in args_typ.items():
+        if key not in args:
+            raise ValidationError
+        ival = args[key]
+        validate_type(ival, typ)
+    return
+
+
+def validate_request(typ):
+    validate_method(typ['methods'])
+    validate_route(typ['route'])
+    validate_json(typ['schema'])
