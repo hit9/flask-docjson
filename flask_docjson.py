@@ -9,6 +9,7 @@
     :license: BSD, see LICENSE for more details.
 """
 
+import ctypes
 from ply import lex, yacc
 
 __version__ = '0.0.1'
@@ -26,7 +27,11 @@ class LexerError(Error):
     pass
 
 
-class GrammerError(Exception):
+class GrammerError(Error):
+    pass
+
+
+class ValidationError(Error):
     pass
 
 
@@ -53,29 +58,6 @@ M_GET = 2
 M_PUT = 3
 M_DELETE = 4
 M_PATCH = 5
-
-
-class Request(object):
-    def __init__(self, methods=None, route=None, schema=None):
-        if methods is None:
-            methods = []
-        self.methods = methods
-        self.route = route
-        self.schema = schema
-
-
-class Response(object):
-    def __init__(self, status_code=None, schema=None):
-        self.status_code = status_code
-        self.schema = schema
-
-
-class Schema(object):
-    def __init__(self, request=None, responses=None):
-        if responses is None:
-            responses = []
-        self.request = request
-        self.responses = responses
 
 
 ###
@@ -294,12 +276,12 @@ def p_error(p):
 
 def p_start(p):
     '''start : request response_seq'''
-    p[0] = Schema(request=p[1], responses=p[2])
+    p[0] = dict(request=p[1], responses=p[2])
 
 
 def p_request(p):
     '''request : method_seq route json_schema'''
-    p[0] = Request(methods=p[1], route=p[2], schema=p[3])
+    p[0] = dict(methods=p[1], route=p[2], schema=p[3])
 
 
 def p_method_seq(p):
@@ -360,7 +342,7 @@ def p_response_seq(p):
 
 def p_response_item(p):
     '''response_item : status_code_seq json_schema'''
-    p[0] = Response(status_code=p[1], schema=p[2])
+    p[0] = dict(status_code=p[1], schema=p[2])
 
 
 def p_status_code_seq(p):
@@ -469,3 +451,91 @@ def parse(data):
         else:
             break
     return parse_schema('\n'.join(lines))
+
+
+###
+# Validation
+###
+
+
+def validate_bool(val):
+    if isinstance(val, bool):
+        return True
+    raise ValidationError
+
+
+def validate_u8(val):
+    if isinstance(val, int):
+        if ctypes.c_uint8(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_u16(val):
+    if isinstance(val, int):
+        if ctypes.c_uint16(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_u32(val):
+    if isinstance(val, int):
+        if ctypes.c_uint32(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_u64(val):
+    if isinstance(val, int):
+        if ctypes.c_uint64(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_i8(val):
+    if isinstance(val, int):
+        if ctypes.c_int8(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_i16(val):
+    if isinstance(val, int):
+        if ctypes.c_int16(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_i32(val):
+    if isinstance(val, int):
+        if ctypes.c_int32(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_i64(val):
+    if isinstance(val, int):
+        if ctypes.c_int64(val).value == val:
+            return True
+    raise ValidationError
+
+
+def validate_float(val):
+    if isinstance(val, (int, float)):
+        return True
+    raise ValidationError
+
+
+def validate_string(val):
+    if isinstance(val, str):
+        return True
+    raise ValidationError
+
+
+with open('test') as f:
+    data = f.read()
+    schema = parse(data)
+    schema = parse(data)
+    schema = parse(data)
+    import IPython
+    IPython.embed()
