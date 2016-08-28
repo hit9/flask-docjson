@@ -10,7 +10,10 @@
 """
 
 import ctypes
-from flask import request
+import json
+from functools import wraps
+
+from flask import request, Response
 from ply import lex, yacc
 
 __version__ = '0.0.1'
@@ -360,8 +363,12 @@ def p_response_seq(p):
 
 
 def p_response_item(p):
-    '''response_item : status_code_seq json_schema'''
-    p[0] = dict(status_code=p[1], schema=p[2])
+    '''response_item : status_code_seq json_schema
+                     | status_code_seq'''
+    if len(p) == 3:
+        p[0] = dict(status_code=p[1], schema=p[2])
+    elif len(p) == 2:
+        p[0] = dict(status_code=p[1], schema=None)
 
 
 def p_status_code_seq(p):
@@ -384,7 +391,8 @@ def p_json_schema(p):
 
 
 def p_object(p):
-    '''object : '{' kv_seq '}' '''
+    '''object : '{' kv_seq '}'
+              | '{' kv_seq ELLIPSIS '}' '''
     p[0] = dict(p[2])
 
 
@@ -538,7 +546,7 @@ def validate_float(val):
 
 
 def validate_string(val, typ):
-    if isinstance(val, str):
+    if isinstance(val, basestring):
         if typ[1] is None or len(val) <= typ[1]:
             return
     raise ValidationError
@@ -649,4 +657,52 @@ def validate_route(typ):
 def validate_request(typ):
     validate_method(typ['methods'])
     validate_route(typ['route'])
-    validate_json(typ['schema'])
+    validate_json(request.get_json(), typ['schema'])
+
+
+def match_status_code(matcher, code):
+    code_s = str(code)
+    matcher_s = str(matcher)
+    if len(code_s) != len(matcher_s):
+        return False
+    for i, ch in enumerate(code_s):
+        if matcher_s[i] == ch or matcher_s[i] == 'X':
+            continue
+        else:
+            return False
+    return True
+
+
+def validate_response(val, typ):
+    if not isinstance(val, Response):
+        raise ValidationError
+    status_code = val.status_code
+    data = val.get_data()
+    if data:
+        try:
+            response_json = json.loads(data)
+        except ValueError:
+            raise ValidationError
+    else:
+        response_json = None
+    for response_typ in typ:
+        code_matchers = response_typ['status_code']
+        json_typ = response_typ['schema']
+        for code_matcher in code_matchers:
+            if match_status_code(code_matcher, status_code):
+                if json_typ is None and response_json is None:
+                    return
+                elif json_typ is not None and response_json is not None:
+                    return validate_json(response_json, json_typ)
+    raise ValidationError
+
+
+def validate(fn):
+    schema = parse(fn.__doc__)
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        validate_request(schema['request'])
+        response = fn(*args, **kwargs)
+        validate_response(response, schema['responses'])
+        return response
+    return wrapper
