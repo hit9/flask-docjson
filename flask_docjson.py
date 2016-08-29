@@ -614,12 +614,12 @@ def validate_array(val, typ):
     if not isinstance(val, list):
         raise ValidationError
     if not typ:
-        if val:
+        if val:  # Must be empty array
             raise ValidationError
         return
-    for i, ityp in enumerate(typ):
-        if ityp == S_ELLIPSIS:
-            ityp = typ[i-1]
+    for i in range(len(typ)):
+        ityp = typ[i]
+        if i < len(typ) -1 and typ[i+1] == S_ELLIPSIS:
             while i < len(val):
                 ival = val[i]
                 i += 1

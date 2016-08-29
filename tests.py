@@ -256,6 +256,16 @@ class TestValidation(unittest.TestCase):
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ)
 
+    def test_validate_array_ellipsis_empty_val_1(self):
+        val = []
+        typ = [m.T_U8, m.S_ELLIPSIS]
+        assert m.validate_array(val, typ) is None
+
+    def test_validate_array_ellipsis_empty_val_2(self):
+        val = [1]
+        typ = [m.T_U8, m.T_U8, m.S_ELLIPSIS]
+        assert m.validate_array(val, typ) is None
+
     def test_validate_object(self):
         val_ok = {"name": "abcd", "id": 1}
         val_bad = {"name": "abcdefg", "id": 111111111}
