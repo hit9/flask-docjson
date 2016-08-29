@@ -81,6 +81,40 @@ For an example schema::
 1. Empty `list` (aka `[]`) passes this schema.
 2. For a given `list`, all its elements should be `u8`.
 
+Nullable Value
+--------------
+
+By default, values shouldn't be nullable, an example to change this behavior:
+
+```
+{
+    "optional-string": string(32)*,
+    "optional-number": i32*
+}
+```
+
+But `*` can't be used with the whole JSON schema.
+
+No Content Request/Response
+----------------------------
+
+Just leave the schema blank:
+
+* Request schema without content example:
+
+   ```
+   GET /data
+   200
+   {"key": i32}
+   ```
+
+* Response schema without content example:
+
+   ```
+   DELETE /data/<i32:id>
+   201
+   ```
+
 Language Description
 --------------------
 

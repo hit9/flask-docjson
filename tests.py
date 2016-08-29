@@ -38,21 +38,23 @@ class TestParser(unittest.TestCase):
                 'route': ['/item', {}],
                 'methods': [m.M_POST, m.M_PUT],
                 'schema': {
-                    'name': (m.T_STRING, None),
-                    'number': m.T_I16,
-                    'children': [{'id': m.T_I32}, m.S_ELLIPSIS]
+                    'name': ((m.T_STRING, None), False),
+                    'number': (m.T_I16, False),
+                    'children': ([({'id': (m.T_I32, False)}, False),
+                                  m.S_ELLIPSIS], False)
                 },
             },
             'responses': [
                 {'status_code': [200],
                  'schema': {
-                     'id': m.T_I32,
-                     'name': (m.T_STRING, None),
-                     'number': m.T_I16,
-                     'children': [{'id': m.T_I32}, m.S_ELLIPSIS]
+                     'id': (m.T_I32, False),
+                     'name': ((m.T_STRING, None), False),
+                     'number': (m.T_I16, False),
+                     'children': ([({'id': (m.T_I32, False)}, False),
+                                   m.S_ELLIPSIS], False)
                  }},
                 {'status_code': ['4XX', '5XX'],
-                 'schema': {'message': (m.T_STRING, None)}}
+                 'schema': {'message': ((m.T_STRING, None), False)}}
             ]
         }
 
@@ -69,7 +71,7 @@ class TestParser(unittest.TestCase):
         """
         schema = m.parse(self.test_string_escape.__doc__)
         assert schema['request']['schema'] == {
-            'specialkey"\t\r': m.T_I8,
+            'specialkey"\t\r': (m.T_I8, False),
         }
 
     def test_no_content(self):
@@ -107,7 +109,8 @@ class TestParser(unittest.TestCase):
             },
             'responses': [
                 {'status_code': [200],
-                 'schema': {'id': m.T_I32, 'name': (m.T_STRING, 33)}}
+                 'schema': {'id': (m.T_I32, False), 'name': ((m.T_STRING, 33),
+                                                             False)}}
             ],
         }
 
@@ -129,8 +132,9 @@ class TestParser(unittest.TestCase):
             },
             'responses': [
                 {'status_code': [200],
-                 'schema': [{'id': m.T_I32, 'name': (m.T_STRING, 32)},
-                            m.S_ELLIPSIS]}
+                 'schema': [({'id': (m.T_I32, False), 'name': (
+                     (m.T_STRING, 32),
+                     False)}, False), m.S_ELLIPSIS]}
             ]
         }
 
@@ -145,6 +149,29 @@ class TestParser(unittest.TestCase):
         """
         with self.assertRaises(m._InternalGrammerError):
             m.parse(self.test_bad_status_code_matcher.__doc__)
+
+    def test_nullable_schema(self):
+        """Schema::
+            GET /users
+            {"name": string(33)*}
+            201
+        """
+        schema = m.parse(self.test_nullable_schema.__doc__)
+        assert schema == {
+            'request': {
+                'methods': [m.M_GET],
+                'route': ['/users', {}],
+                'schema': {
+                    'name': ((m.T_STRING, 33), True)
+                }
+            },
+            'responses': [
+                {
+                    'status_code': [201],
+                    'schema': None
+                }
+            ]
+        }
 
 
 class TestValidation(unittest.TestCase):
@@ -200,7 +227,7 @@ class TestValidation(unittest.TestCase):
     def test_validate_array_case_simple_1(self):
         val_ok = [1, 2, 3, 4, 5]
         val_bad = [1, 2, 3, 4, 256]
-        typ = [m.T_U8, m.S_ELLIPSIS]
+        typ = [(m.T_U8, False), m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -208,7 +235,7 @@ class TestValidation(unittest.TestCase):
     def test_validate_array_case_simple_2(self):
         val_ok = ["abc", "efg", "hij"]
         val_bad = ["abc", "efg", "hijopq"]
-        typ = [(m.T_STRING, 3), m.S_ELLIPSIS]
+        typ = [((m.T_STRING, 3), False), m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -216,7 +243,8 @@ class TestValidation(unittest.TestCase):
     def test_validate_array_complex_1(self):
         val_ok = [1, 256, 3, 255]
         val_bad = [1, 256, 3, 256]
-        typ = [m.T_U8, m.T_U32, m.T_U8, m.S_ELLIPSIS]
+        typ = [(m.T_U8, False), (m.T_U32, False), (m.T_U8, False),
+               m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -230,7 +258,9 @@ class TestValidation(unittest.TestCase):
                    {"name": 'chao-wang', "id": 33},
                    {"name": 'ming', "id": 34},
                    ]
-        typ = [{"name": (m.T_STRING, 4), "id": m.T_I32}, m.S_ELLIPSIS]
+        typ = [({"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)},
+                False),
+               m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -242,8 +272,9 @@ class TestValidation(unittest.TestCase):
                    {"name": 'chao', "id": 33},
                    {"name": 'ming', "id": 34},
                    ]
-        typ = [{"name": (m.T_STRING, 4), "id": m.T_I32},
-               {"name": (m.T_STRING, 4), "id": m.T_I32}]
+        typ = [({"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)},
+                False),
+               ({"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)}, False)]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -251,25 +282,25 @@ class TestValidation(unittest.TestCase):
     def test_validate_array_nested(self):
         val_ok = [{"child": [15, 16, 17]}, {"child": [25, 26, 37]}]
         val_bad = [{"child": [15, 16, 17]}, {"child": [25, 266, 37]}]
-        typ = [{"child": [m.T_U8, m.S_ELLIPSIS]}, m.S_ELLIPSIS]
+        typ = [({"child": ([(m.T_U8, False), m.S_ELLIPSIS], False)}, False), m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
 
     def test_validate_array_ellipsis_empty_val_1(self):
         val = []
-        typ = [m.T_U8, m.S_ELLIPSIS]
+        typ = [(m.T_U8, False), m.S_ELLIPSIS]
         assert m.validate_array(val, typ, None) is None
 
     def test_validate_array_ellipsis_empty_val_2(self):
         val = [1]
-        typ = [m.T_U8, m.T_U8, m.S_ELLIPSIS]
+        typ = [(m.T_U8, False), (m.T_U8, False), m.S_ELLIPSIS]
         assert m.validate_array(val, typ, None) is None
 
     def test_validate_object(self):
         val_ok = {"name": "abcd", "id": 1}
         val_bad = {"name": "abcdefg", "id": 111111111}
-        typ = {"name": (m.T_STRING, 4), "id": m.T_I32}
+        typ = {"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)}
         assert m.validate_object(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_object(val_bad, typ, None)
@@ -277,10 +308,24 @@ class TestValidation(unittest.TestCase):
     def test_validate_object_nested(self):
         val_ok = {"name": {"name": {"name": "hello world"}}}
         val_bad = {"name": {"name": {"name": "hello world!"}}}
-        typ = {"name": {"name": {"name": (m.T_STRING, 11)}}}
+        typ = {"name": ({"name": ({"name": ((m.T_STRING, 11), False)}, False)},
+                        False)}
         assert m.validate_object(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_object(val_bad, typ, None)
+
+    def test_array_nullable_element_1(self):
+        val_ok = [1, None, 2, None]
+        val_bad = [1, None, None, None]
+        typ = [(m.T_U8, False), (m.T_U8, True), (m.T_U8, False), (m.T_U8, True)]
+        assert m.validate_array(val_ok, typ, None) is None
+        with self.assertRaises(m.ValidationError):
+            m.validate_array(val_bad, typ, None)
+
+    def test_array_nullable_element_2(self):
+        val = [None] * 100
+        typ = [(m.T_U8, True), m.S_ELLIPSIS]
+        assert m.validate_array(val, typ, None) is None
 
     def test_validate_json_None(self):
         assert m.validate_json(None, None, None) is None

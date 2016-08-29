@@ -113,7 +113,7 @@ M_OPTIONS = 7
 # Lexer
 ###
 
-literals = ':,()[]{}/<>'
+literals = ':,()[]{}/<>*'
 
 t_ignore = ' \t\r'   # whitespace
 
@@ -474,8 +474,13 @@ def p_value_seq(p):
 
 def p_value(p):
     '''value : type
-             | json_schema'''
-    p[0] = p[1]
+             | json_schema
+             | type '*'
+             | json_schema '*' '''
+    if len(p) == 3:
+        p[0] = (p[1], True)
+    elif len(p) == 2:
+        p[0] = (p[1], False)
 
 
 def p_type(p):
@@ -705,13 +710,18 @@ def validate_object(val, typ, p):
         validate_value(ival, ityp, p)
 
 
-def validate_value(val, typ, p):
-    if isinstance(typ, dict):
-        validate_object(val, typ, p)
-    elif isinstance(typ, list):
-        validate_array(val, typ, p)
+def validate_value(val, typ, p):  # Main entry
+    ityp, nullable = typ
+    if val is None:
+        if not nullable:
+            raise_validation_error(p)
+        return
+    if isinstance(ityp, dict):
+        validate_object(val, ityp, p)
+    elif isinstance(ityp, list):
+        validate_array(val, ityp, p)
     else:
-        validate_type(val, typ, p)
+        validate_type(val, ityp, p)
 
 
 def validate_json(val, typ, p):
@@ -719,10 +729,8 @@ def validate_json(val, typ, p):
         if val is not None:
             raise_validation_error(p)
         return
-    if isinstance(typ, list):
-        return validate_array(val, typ, p)
-    elif isinstance(typ, dict):
-        return validate_object(val, typ, p)
+    if isinstance(typ, (list, dict)):
+        return validate_value(val, typ, p)
     raise_validation_error(p)
 
 
