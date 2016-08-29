@@ -47,6 +47,16 @@ class ValidationError(Error):
     pass
 
 
+class RequestValidationError(ValidationError):
+    """A validation error occurred while validating request data."""
+    pass
+
+
+class ResponseValidationError(ValidationError):
+    """A validation error occurred while validating response data."""
+    pass
+
+
 ###
 # Schema
 ###
@@ -755,3 +765,16 @@ def validate(fn):
         validate_response(response, schema['responses'])
         return response
     return wrapper
+
+
+def register_all(app):
+    """Register all view functions for given flask app, example::
+
+        app = Flask(__name__)
+        from .views import *
+        register_all(app)
+    """
+    for endpoint, view_func in app.view_functions.items():
+        if endpoint == 'static':
+            continue
+        app.view_functions[endpoint] = validate(view_func)

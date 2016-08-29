@@ -1,12 +1,5 @@
-flask-docjson
-=============
+# -*- coding: utf-8 -*-
 
-Validate flask request and response json schemas via docstring.
-
-Example
--------
-
-```python
 from flask import Flask, jsonify
 import flask_docjson
 
@@ -49,8 +42,3 @@ flask_docjson.register_all(app)
 
 if __name__ == '__main__':
     app.run()
-```
-
-License
--------
-BSD.
