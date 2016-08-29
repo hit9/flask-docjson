@@ -24,7 +24,7 @@ Purpose
 Example
 -------
 
-Please checkout [example.py](example.py).
+**Strongly recommend** that you checkout [example.py](example.py) at first.
 
 Install
 -------
