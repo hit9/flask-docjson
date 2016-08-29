@@ -57,6 +57,20 @@ class ResponseValidationError(ValidationError):
     pass
 
 
+class _InternalError(Exception):
+    """Internal used purpose exception base."""
+    pass
+
+
+class _InternalLexerError(_InternalError):
+    """Internal used purpose lexer error base."""
+    pass
+
+
+class _InternalGrammerError(_InternalError):
+    """Internal used purpose grammer error base."""
+
+
 ###
 # Schema
 ###
@@ -121,8 +135,8 @@ tokens = (
 
 
 def t_error(t):
-    raise LexerError('Illegal characher %r at line %d' %
-                     (t.value[0], t.lineno))
+    raise _InternalLexerError('illegal char %r at line %d' % (t.value[0],
+                                                              t.lineno))
 
 
 def t_newline(t):
@@ -250,7 +264,7 @@ def t_IDENTIFIER(t):
 
 
 def t_STATIC_ROUTE(t):
-    r'\B/[^<{\r\n]*'
+    r'\B/[^<{\r\n\s]*'
     return t
 
 
@@ -284,8 +298,8 @@ def t_LITERAL_STRING(t):
             if s[i] in maps:
                 val += maps[s[i]]
             else:
-                msg = 'Unexcepted escaping characher: %s' % s[i]
-                raise LexerError(msg)
+                raise _InternalLexerError('unsupported escaping char %r at '
+                                          'line %d' % (s[i], t.lineno))
         else:
             val += s[i]
         i += 1
@@ -308,8 +322,9 @@ def _parse_seq(p):
 
 def p_error(p):
     if p is None:
-        raise GrammerError('Grammer error at EOF')
-    raise GrammerError('Grammer error %r at line %d' % (p.value, p.lineno))
+        raise _InternalGrammerError('grammer error at EOF')
+    raise _InternalGrammerError('grammer error %r at line %d' % (p.value,
+                                                                 p.lineno))
 
 
 def p_start(p):
@@ -512,6 +527,28 @@ def parse(data):
     if block_start:
         return parse_schema('\n'.join(lines))
     return None
+
+
+def parse_from_func(func):
+    """Parse schema from function by parsing its ``__doc__``.
+    Returns ``None`` if given func has no ``__doc__``.
+    """
+    data = getattr(func, '__doc__', None)
+    if data is None:
+        return None
+    try:
+        return parse(data)
+    except _InternalError as exc:
+        msg = '{}:{}:{}: {}'.format(func.func_code.co_filename,
+                                   func.func_code.co_firstlineno,
+                                   func.func_code.co_name,
+                                   str(exc))
+        if isinstance(exc, _InternalLexerError):
+            raise LexerError(msg)
+        elif isinstance(exc, _InternalGrammerError):
+            raise GrammerError(msg)
+        else:
+            raise ParserError(msg)
 
 
 ###
@@ -749,7 +786,7 @@ def validate_response(val, typ):
     raise_validation_error(p)
 
 
-def validate(fn):
+def validate(func):
     """A decorator that is used to validate request and response for given
     api function, example::
 
@@ -768,14 +805,15 @@ def validate(fn):
             '''
             pass
     """
-    if getattr(fn, '__doc__', None) is None:
-        return fn
-    schema = parse(fn.__doc__)
+    schema = parse_from_func(func)
+    print schema
+    if schema is None:
+        return func
 
-    @wraps(fn)
+    @wraps(func)
     def wrapper(*args, **kwargs):
         validate_request(schema['request'])
-        response = fn(*args, **kwargs)
+        response = func(*args, **kwargs)
         validate_response(response, schema['responses'])
         return response
     return wrapper

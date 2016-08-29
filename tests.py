@@ -143,7 +143,7 @@ class TestParser(unittest.TestCase):
                 ...
             ]
         """
-        with self.assertRaises(m.GrammerError):
+        with self.assertRaises(m._InternalGrammerError):
             m.parse(self.test_bad_status_code_matcher.__doc__)
 
 
