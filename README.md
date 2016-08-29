@@ -51,7 +51,7 @@ Usage
    def get_user(id):
        """Schema::
            ...
-        """
+       """
    ```
 
 Base Types
@@ -80,6 +80,20 @@ For an example schema::
 
 1. Empty `list` (aka `[]`) passes this schema.
 2. For a given `list`, all its elements should be `u8`.
+
+Ellipsis Object
+---------------
+
+```
+{
+    "id": i32,
+    ...
+}
+```
+
+An object with ellipsis is exactly the same with this object without ellipsis, 
+this feature is useful to indicate this object may contains more fields, but
+the author just don't want to validate or document them.
 
 Nullable Value
 --------------
