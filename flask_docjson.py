@@ -806,7 +806,6 @@ def validate(func):
             pass
     """
     schema = parse_from_func(func)
-    print schema
     if schema is None:
         return func
 
