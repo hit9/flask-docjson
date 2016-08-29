@@ -551,9 +551,9 @@ def parse_from_func(func):
         return parse(data)
     except _InternalError as exc:
         msg = '{}:{}:{}: {}'.format(func.func_code.co_filename,
-                                   func.func_code.co_firstlineno,
-                                   func.func_code.co_name,
-                                   str(exc))
+                                    func.func_code.co_firstlineno,
+                                    func.func_code.co_name,
+                                    str(exc))
         if isinstance(exc, _InternalLexerError):
             raise LexerError(msg)
         elif isinstance(exc, _InternalGrammerError):
@@ -680,7 +680,7 @@ def validate_array(val, typ, p):
         return
     for i in range(len(typ)):
         ityp = typ[i]
-        if i < len(typ) -1 and typ[i+1] == S_ELLIPSIS:
+        if i < len(typ)-1 and typ[i+1] == S_ELLIPSIS:
             while i < len(val):
                 ival = val[i]
                 i += 1
