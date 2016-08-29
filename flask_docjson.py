@@ -518,104 +518,117 @@ def parse(data):
 # Validation
 ###
 
-def validate_bool(val):
+P_REQUEST = 1
+P_RESPONSE = 2
+
+
+def raise_validation_error(p):
+    if p == P_REQUEST:
+        raise RequestValidationError
+    elif p == P_RESPONSE:
+        raise ResponseValidationError
+    else:
+        raise ValidationError
+
+
+def validate_bool(val, p):
     if isinstance(val, bool):
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_u8(val):
+def validate_u8(val, p):
     if isinstance(val, int) and ctypes.c_uint8(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_u16(val):
+def validate_u16(val, p):
     if isinstance(val, int) and ctypes.c_uint16(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_u32(val):
+def validate_u32(val, p):
     if isinstance(val, int) and ctypes.c_uint32(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_u64(val):
+def validate_u64(val, p):
     if isinstance(val, (int, long)) and ctypes.c_uint64(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_i8(val):
+def validate_i8(val, p):
     if isinstance(val, int) and ctypes.c_int8(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_i16(val):
+def validate_i16(val, p):
     if isinstance(val, int) and ctypes.c_int16(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_i32(val):
+def validate_i32(val, p):
     if isinstance(val, int) and ctypes.c_int32(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_i64(val):
+def validate_i64(val, p):
     if isinstance(val, (int, long)) and ctypes.c_int64(val).value == val:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_float(val):
+def validate_float(val, p):
     if isinstance(val, (int, long, float)):
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_string(val, typ):
+def validate_string(val, typ, p):
     if isinstance(val, basestring):
         if typ[1] is None or len(val) <= typ[1]:
             return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_type(val, typ):
+def validate_type(val, typ, p):
     if typ == T_BOOL:
-        return validate_bool(val)
+        return validate_bool(val, p)
     elif typ == T_U8:
-        return validate_u8(val)
+        return validate_u8(val, p)
     elif typ == T_U16:
-        return validate_u16(val)
+        return validate_u16(val, p)
     elif typ == T_U32:
-        return validate_u32(val)
+        return validate_u32(val, p)
     elif typ == T_U64:
-        return validate_u64(val)
+        return validate_u64(val, p)
     elif typ == T_I8:
-        return validate_i8(val)
+        return validate_i8(val, p)
     elif typ == T_I16:
-        return validate_i16(val)
+        return validate_i16(val, p)
     elif typ == T_I32:
-        return validate_i32(val)
+        return validate_i32(val, p)
     elif typ == T_I64:
-        return validate_i64(val)
+        return validate_i64(val, p)
     elif typ == T_FLOAT:
-        return validate_float(val)
+        return validate_float(val, p)
     elif isinstance(typ, tuple) and typ[0] == T_STRING:
-        return validate_string(val, typ)
+        return validate_string(val, typ, p)
 
 
-def validate_array(val, typ):
+def validate_array(val, typ, p):
     if not isinstance(val, list):
-        raise ValidationError
+        raise_validation_error(p)
     if not typ:
         if val:  # Must be empty array
-            raise ValidationError
+            raise_validation_error(p)
         return
     for i in range(len(typ)):
         ityp = typ[i]
@@ -623,49 +636,49 @@ def validate_array(val, typ):
             while i < len(val):
                 ival = val[i]
                 i += 1
-                validate_value(ival, ityp)
+                validate_value(ival, ityp, p)
             return None
         else:
             if i >= len(val):
-                raise ValidationError
+                raise_validation_error(p)
             ival = val[i]
-            validate_value(ival, ityp)
+            validate_value(ival, ityp, p)
     if len(typ) != len(val):  # No ELLIPSIS
-        raise ValidationError
+        raise_validation_error(p)
 
 
-def validate_object(val, typ):
+def validate_object(val, typ, p):
     if not isinstance(val, dict):
-        raise ValidationError
+        raise_validation_error(p)
     for key, ityp in typ.items():
         if key not in val:
-            raise ValidationError
+            raise_validation_error(p)
         ival = val[key]
-        validate_value(ival, ityp)
+        validate_value(ival, ityp, p)
 
 
-def validate_value(val, typ):
+def validate_value(val, typ, p):
     if isinstance(typ, dict):
-        validate_object(val, typ)
+        validate_object(val, typ, p)
     elif isinstance(typ, list):
-        validate_array(val, typ)
+        validate_array(val, typ, p)
     else:
-        validate_type(val, typ)
+        validate_type(val, typ, p)
 
 
-def validate_json(val, typ):
+def validate_json(val, typ, p):
     if typ is None:
         if val is not None:
-            raise ValidationError
+            raise_validation_error(p)
         return
     if isinstance(typ, list):
-        return validate_array(val, typ)
+        return validate_array(val, typ, p)
     elif isinstance(typ, dict):
-        return validate_object(val, typ)
-    raise ValidationError
+        return validate_object(val, typ, p)
+    raise_validation_error(p)
 
 
-def validate_method(val, typ):
+def validate_method(val, typ, p):
     if val == 'POST' and M_POST in typ:
         return
     elif val == 'GET' and M_GET in typ:
@@ -680,22 +693,22 @@ def validate_method(val, typ):
         return
     elif val == 'OPTIONS' and M_OPTIONS in typ:
         return
-    raise ValidationError
+    raise_validation_error(p)
 
 
-def validate_route(val, typ):
+def validate_route(val, typ, p):
     args_typ = typ[1]
     for key, ityp in args_typ.items():
         if key not in val:
-            raise ValidationError
+            raise_validation_error(p)
         ival = val[key]
-        validate_type(ival, ityp)
+        validate_type(ival, ityp, p)
 
 
 def validate_request(typ):
-    validate_method(request.method, typ['methods'])
-    validate_route(request.view_args, typ['route'])
-    validate_json(request.get_json(), typ['schema'])
+    validate_method(request.method, typ['methods'], P_REQUEST)
+    validate_route(request.view_args, typ['route'], P_REQUEST)
+    validate_json(request.get_json(), typ['schema'], P_REQUEST)
 
 
 def match_status_code(matcher, code):
@@ -712,8 +725,9 @@ def match_status_code(matcher, code):
 
 
 def validate_response(val, typ):
+    p = P_RESPONSE
     if not isinstance(val, Response):
-        raise ValidationError
+        raise_validation_error(p)
     status_code = val.status_code
     data = val.get_data()
     if data:
@@ -731,8 +745,8 @@ def validate_response(val, typ):
                 if json_typ is None and response_json is None:
                     return
                 elif json_typ is not None and response_json is not None:
-                    return validate_json(response_json, json_typ)
-    raise ValidationError
+                    return validate_json(response_json, json_typ, p)
+    raise_validation_error(p)
 
 
 def validate(fn):
