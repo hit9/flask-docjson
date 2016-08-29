@@ -129,6 +129,12 @@ Just leave the schema blank:
    201
    ```
 
+Minor Differences from JSON
+---------------------------
+
+In standard JSON, schema with a trailing comma (e.g. `{"key": "value",}`) is illegal,
+but our JSON schema allows this. Because that makes modifications by line convenience.
+
 Language Description
 --------------------
 
