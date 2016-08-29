@@ -4,3 +4,5 @@ __pycache__
 .cache
 dist
 flask_docjson.egg-info
+test_data
+test.py
