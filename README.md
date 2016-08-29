@@ -3,7 +3,7 @@ flask-docjson
 
 Validate flask request and response json schemas via docstring.
 
-```json
+```
 GET /user/<i32:id>
 200
 {"id": i32, "name": string(32)}
