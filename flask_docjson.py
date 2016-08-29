@@ -28,12 +28,16 @@ class Error(Exception):
     pass
 
 
-class LexerError(Error):
+class ParserError(Error):
+    """A parser error occurred."""
+
+
+class LexerError(ParserError):
     """A lexer error occurred."""
     pass
 
 
-class GrammerError(Error):
+class GrammerError(ParserError):
     """A grammer error occurred."""
     pass
 
@@ -504,7 +508,6 @@ def parse(data):
 # Validation
 ###
 
-
 def validate_bool(val):
     if isinstance(val, bool):
         return
@@ -611,12 +614,14 @@ def validate_array(val, typ):
                 ival = val[i]
                 i += 1
                 validate_value(ival, ityp)
-            break
+            return None
         else:
             if i >= len(val):
                 raise ValidationError
             ival = val[i]
             validate_value(ival, ityp)
+    if len(typ) != len(val):  # No ELLIPSIS
+        raise ValidationError
 
 
 def validate_object(val, typ):
@@ -650,39 +655,36 @@ def validate_json(val, typ):
     raise ValidationError
 
 
-def validate_method(typ):
-    name = request.method
-    if name == 'POST' and M_POST in typ:
+def validate_method(val, typ):
+    if val == 'POST' and M_POST in typ:
         return
-    elif name == 'GET' and M_GET in typ:
+    elif val == 'GET' and M_GET in typ:
         return
-    elif name == 'PUT' and M_PUT in typ:
+    elif val == 'PUT' and M_PUT in typ:
         return
-    elif name == 'DELETE' and M_DELETE in typ:
+    elif val == 'DELETE' and M_DELETE in typ:
         return
-    elif name == 'PATCH' and M_PATCH in typ:
+    elif val == 'PATCH' and M_PATCH in typ:
         return
-    elif name == 'HEAD' and M_HEAD in typ:
+    elif val == 'HEAD' and M_HEAD in typ:
         return
-    elif name == 'OPTIONS' and M_OPTIONS in typ:
+    elif val == 'OPTIONS' and M_OPTIONS in typ:
         return
     raise ValidationError
 
 
-def validate_route(typ):
-    args = request.view_args
+def validate_route(val, typ):
     args_typ = typ[1]
     for key, ityp in args_typ.items():
-        if key not in args:
+        if key not in val:
             raise ValidationError
-        ival = args[key]
-        validate_type(ival, typ)
-    return
+        ival = val[key]
+        validate_type(ival, ityp)
 
 
 def validate_request(typ):
-    validate_method(typ['methods'])
-    validate_route(typ['route'])
+    validate_method(request.method, typ['methods'])
+    validate_route(request.view_args, typ['route'])
     validate_json(request.get_json(), typ['schema'])
 
 
@@ -741,11 +743,11 @@ def validate(fn):
                 }
             '''
             pass
-
     """
     if getattr(fn, '__doc__', None) is None:
         return fn
     schema = parse(fn.__doc__)
+
     @wraps(fn)
     def wrapper(*args, **kwargs):
         validate_request(schema['request'])
