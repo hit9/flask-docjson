@@ -14,6 +14,13 @@ def get_user(id):
     """
 ```
 
+Purpose
+-------
+
+* Bye: repetitive json type validation work.
+* Hello: concise flask api documentation.
+
+
 Example
 -------
 
@@ -78,10 +85,10 @@ Language Description
 --------------------
 
 * Document: `Schema ::= Request Response*`.
-* Request: `Request ::= Method* Route JsonSchema`]
+* Request: `Request ::= Method* Route JsonSchema`
 * Response: `Response ::= StatusCode* JsonSchema`
 * Method: `Method ::= POST|PUT|GET|DELETE|PATCH|HEAD|OPTIONS`. Method separator is `/`.
-* Route: `Route ::= StaticRoute* RouteVar* StaticRoute*`. e.g. `/user/<i32:id`
+* Route: `Route ::= StaticRoute* RouteVar* StaticRoute*`. e.g. `/user/<i32:id>`
 * StatusCode: `StatusCode ::= Integer|Matcher`. e.g. `200`, `4XX`
 * JsonSchema: `JsonSchema ::= Array | Object`.
 * Array: `Array ::= '[' Value* | Value* '...' ']'`
