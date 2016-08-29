@@ -10,13 +10,24 @@
 """
 
 import ctypes
-import json
 from functools import wraps
+import json
+import sys
 
 from flask import request, Response
 from ply import lex, yacc
 
 __version__ = '0.0.1'
+
+
+###
+# Compact
+###
+
+if sys.version_info.major == 3:
+    basestring = (str, bytes)
+    unicode = str
+    long = int
 
 
 ###
@@ -364,7 +375,7 @@ def p_route(p):
              |'''
     if len(p) == 3:
         if p[2][1]:
-            dct = dict(p[1][1].items() + [p[2][1]])
+            dct = dict(list(p[1][1].items()) + [p[2][1]])
             p[0] = [p[1][0] + p[2][0] + '<' + p[2][1][0] + '>', dct]
         else:
             p[0] = [p[1][0] + p[2][0], p[1][1]]
