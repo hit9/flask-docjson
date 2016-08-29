@@ -3,7 +3,7 @@
     flask-docjson
     ~~~~~~~~~~~~~
 
-    A micro flask extension to validate json schemas via docstring.
+    Validate flask request and response json schemas via docstring.
 
     :copyright: (c) 2016 by Chao Wang (hit9).
     :license: BSD, see LICENSE for more details.
@@ -24,18 +24,22 @@ __version__ = '0.0.1'
 ###
 
 class Error(Exception):
+    """A flask-docjson error occurred."""
     pass
 
 
 class LexerError(Error):
+    """A lexer error occurred."""
     pass
 
 
 class GrammerError(Error):
+    """A grammer error occurred."""
     pass
 
 
 class ValidationError(Error):
+    """A validation error occurred."""
     pass
 
 
@@ -300,8 +304,12 @@ def p_start(p):
 
 
 def p_request(p):
-    '''request : method_seq route json_schema'''
-    p[0] = dict(methods=p[1], route=p[2], schema=p[3])
+    '''request : method_seq route json_schema
+               | method_seq route'''
+    if len(p) == 4:
+        p[0] = dict(methods=p[1], route=p[2], schema=p[3])
+    elif len(p) == 3:
+        p[0] = dict(methods=p[1], route=p[2], schema=None)
 
 
 def p_method_seq(p):
@@ -386,7 +394,7 @@ def p_status_code_item(p):
 
 def p_json_schema(p):
     '''json_schema : object
-              | array '''
+                   | array '''
     p[0] = p[1]
 
 
@@ -459,16 +467,26 @@ parser = yacc.yacc(debug=False, write_tables=0)
 
 
 def parse_schema(data):
+    """Parse schema string to schema dict.
+    """
     lexer.lineno = 1
     return parser.parse(data)
 
 
 def parse(data):
+    """Parse docstring to schema dict.
+    Returns ``None`` if:
+        1. ``data`` is ``None`` or falsely.
+        2. No schema sign found in ``data``.
+    """
+    if not data:
+        return None
     block_start = False
     lines = []
     for line in data.splitlines():
         if not block_start:
-            if 'Schema::' in line:
+            if 'Schema::' in line or \
+                    'Schema:' in line:
                 block_start = True
             continue
         if not line or line.isspace() \
@@ -477,7 +495,9 @@ def parse(data):
             lines.append(line)
         else:
             break
-    return parse_schema('\n'.join(lines))
+    if block_start:
+        return parse_schema('\n'.join(lines))
+    return None
 
 
 ###
@@ -510,7 +530,7 @@ def validate_u32(val):
 
 
 def validate_u64(val):
-    if isinstance(val, int) and ctypes.c_uint64(val).value == val:
+    if isinstance(val, (int, long)) and ctypes.c_uint64(val).value == val:
         return
     raise ValidationError
 
@@ -534,13 +554,13 @@ def validate_i32(val):
 
 
 def validate_i64(val):
-    if isinstance(val, int) and ctypes.c_int64(val).value == val:
+    if isinstance(val, (int, long)) and ctypes.c_int64(val).value == val:
         return
     raise ValidationError
 
 
 def validate_float(val):
-    if isinstance(val, (int, float)):
+    if isinstance(val, (int, long, float)):
         return
     raise ValidationError
 
@@ -581,6 +601,8 @@ def validate_array(val, typ):
     if not isinstance(val, list):
         raise ValidationError
     if not typ:
+        if val:
+            raise ValidationError
         return
     for i, ityp in enumerate(typ):
         if ityp == S_ELLIPSIS:
@@ -617,6 +639,10 @@ def validate_value(val, typ):
 
 
 def validate_json(val, typ):
+    if typ is None:
+        if val is not None:
+            raise ValidationError
+        return
     if isinstance(typ, list):
         return validate_array(val, typ)
     elif isinstance(typ, dict):
@@ -698,6 +724,27 @@ def validate_response(val, typ):
 
 
 def validate(fn):
+    """A decorator that is used to validate request and response for given
+    api function, example::
+
+        @app.route('/user/<id>', methods=['GET'])
+        @validate
+        def get_user(id):
+            '''Schema::
+
+                GET /user/<i32:id>
+
+                200
+                {
+                    "id": i32,
+                    "name": string(32)
+                }
+            '''
+            pass
+
+    """
+    if getattr(fn, '__doc__', None) is None:
+        return fn
     schema = parse(fn.__doc__)
     @wraps(fn)
     def wrapper(*args, **kwargs):

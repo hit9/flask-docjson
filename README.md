@@ -1,7 +1,7 @@
 flask-docjson
 =============
 
-A micro flask extension to validate json schemas via docstring.
+Validate flask request and response json schemas via docstring.
 
 Example
 -------
