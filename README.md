@@ -13,9 +13,14 @@ import flask_docjson
 app = Flask(__name__)
 
 
-@app.errorhandler(flask_docjson.ValidationError)
-def on_validation_error(err):
+@app.errorhandler(flask_docjson.RequestValidationError)
+def on_request_validation_error(err):
     return jsonify(message='Bad request'), 400
+
+
+@app.errorhandler(flask_docjson.ResponseValidationError)
+def on_response_validation_error(err):
+    return jsonify(message='Bad response'), 500
 
 
 @app.route('/item', methods=['POST', 'PUT'])
@@ -49,6 +54,13 @@ flask_docjson.register_all(app)
 
 if __name__ == '__main__':
     app.run()
+```
+
+Install
+-------
+
+```
+pip install flask-docjson
 ```
 
 License

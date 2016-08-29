@@ -33,9 +33,9 @@ with open('flask_docjson.py', 'rb') as f:
 
 
 setup(
-    name='Flask-DocJSON',
+    name='flask-docjson',
     version=version,
-    url='http://github.com/hit9/Flask-DocJSON',
+    url='http://github.com/hit9/flask-docjson',
     license='BSD',
     author='Chao Wang',
     author_email='hit9@icloud.com',
@@ -52,7 +52,10 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ]
