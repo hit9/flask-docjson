@@ -12,7 +12,6 @@ def get_user(id):
         200
         {"id": i32, "name": string(32)}
     """
-    pass
 ```
 
 Example
@@ -46,7 +45,6 @@ Usage
        """Schema::
            ...
         """
-       pass
    ```
 
 Base Types
@@ -62,6 +60,20 @@ Containers
 - Array: e.g. `[u8, i32, string]`, `[u8, ...]`
 - Object: e.g. `{"name": string, items: [u8, ...]}`
 
+Ellipsis Array
+--------------
+
+For an example schema::
+
+```
+{
+    "items": [u8, ...]
+}
+```
+
+1. Empty `list` (aka `[]`) passes this schema.
+2. For a given `list`, all its elements should be `u8`.
+
 Language Description
 --------------------
 
@@ -72,7 +84,7 @@ Language Description
 * Route: `Route ::= StaticRoute* RouteVar* StaticRoute*`. e.g. `/user/<i32:id`
 * StatusCode: `StatusCode ::= Integer|Matcher`. e.g. `200`, `4XX`
 * JsonSchema: `JsonSchema ::= Array | Object`.
-* Array: `Array ::= '[' Value* ']' `
+* Array: `Array ::= '[' Value* | Value* '...' ']'`
 * Object: `Object ::= '{' KeyValue* '}'`
 * KeyValue: `KeyValue ::= Key ':' Value`
 * Value: `Array ::= BaseType | Array | Object`
