@@ -4,15 +4,12 @@
 Flask-DocJSON
 -------------
 
-Validate flask request and response json schemas via docstring.
-
-
 Installation
 `````````````
 
 .. code:: bash
 
-    $ pip install Flask-DocJSON
+    $ pip install flask-docjson
 
 Links
 `````
