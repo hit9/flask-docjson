@@ -39,8 +39,8 @@ def create_item():
     return jsonify(**{
         'id': 1,
         'name': 'example',
-        'number': 9500,
-        'tags': ['example-tag']
+        'number': 95,
+        'tags': ['a', 'b', 'c']
     })
 
 flask_docjson.register_all(app)
