@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 
 ###
@@ -730,7 +730,8 @@ def validate_json(val, typ, p):
             raise_validation_error(p)
         return
     if isinstance(typ, (list, dict)):
-        return validate_value(val, typ, p)
+        ityp = (typ, False)  # top json mustn't be null
+        return validate_value(val, ityp, p)
     raise_validation_error(p)
 
 
