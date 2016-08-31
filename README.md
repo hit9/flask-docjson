@@ -1,33 +1,33 @@
 flask-docjson
 =============
 
-Validate flask request and response json schemas via docstring.
+A micro module to validate flask request and response json schemas via
+view function docstrings.
 
-```Python
-@app.route('/user/<id>', methods=['GET'])
-def get_user(id):
-    """Schema::
+```python
+@app.route('/item/<id>', methods=['GET'])
+@flask_docjson.validate
+def get(id):
+    """Get an item by id.
 
-        GET /user/<i32:id>
+    Schema::
+
+        GET /item/<i32:id>
+
         200
-        {"id": i32, "name": string(32)}
+        {
+            "id": i32,
+            "name": string(32),
+            "tags": [string, ...]
+        }
     """
+    pass
 ```
 
-Purpose
--------
+It's **strongly recommended** that you checkout [example](example.py) at first.
 
-* Bye: repetitive json type validation work.
-* Hello: concise flask api documentation.
-
-
-Example
--------
-
-**Strongly recommend** that you checkout [example.py](example.py) at first.
-
-Install
--------
+Installation
+------------
 
 ```
 pip install flask-docjson
@@ -36,17 +36,10 @@ pip install flask-docjson
 Usage
 -----
 
-*  If you want to validate all routes via flask-docjson:
+* Validate routes selectively via decorator:
 
    ```python
-   # Must be called after all routes are defined.
-   flask_docjson.register_all(app)
-   ```
-
-*  If you don't want to validate all routes, just use the decorator instead:
-
-   ```python
-   @app.route('/user/<id>', methods=['GET'])
+   @app.route('/user/<int:id>', methods=['GET'])
    @flask_docjson.validate
    def get_user(id):
        """Schema::
@@ -54,72 +47,185 @@ Usage
        """
    ```
 
+* Validate all routes, no need to decorate view functions one by one:
+
+   ```python
+   # Must be called after all route definitions
+   flask_docjson.register_all(app)
+   ```
+
+Schema
+------
+
+The validator only works when:
+
+1. Given docstring contains a marker `Schema::` or `Schema:`.
+2. The marker is followed by a code block.
+
+Here is an example schema:
+
+```
+Schema::
+
+    POST/PUT /user
+    {
+        "name": string,
+        "email": string,
+        "class_no": i8
+    }
+
+    200
+    {
+        "id": i32,
+        ...
+    }
+    4XX/5XX
+    {"error": string}
+```
+
+A flask-docjson schema should contain one `request` and multiple `responses`
+descriptions, its structure:
+
+```
+Schema::
+
+    <Methods> <Route>
+    <Request-JSON-Schema>
+
+    <StatusCode>
+    <Response-JSON-Schema>
+    ...
+```
+
+The first json schema is for request, and the following json schemas are for
+responses.
+
+`Methods` contains a single or multiple http methods, e.g. `DELETE`, `POST/PUT`
+, all method names should in upper case. Supported method names are:
+
+   * POST
+   * GET
+   * PUT
+   * DELETE
+   * PATCH
+   * HEAd
+   * PATCH
+
+`Route` is a flask url rule, but supports stricter variable types. e.g.
+`/user/<i32:id>`, `/name/<string(32):name>`. Note that these types are
+validators but not converters. We still need to use flask built-in converters:
+
+   ```python
+   @app.route("/<int:id>", methods=['GET'])  # OK
+   # @app.route("/<id>", methods=['GET'])  # BAD
+   def get(id):
+       """Schema::
+
+           GET /<i32:id>
+           200
+       """
+   ```
+ 
+`JSON-Schema` has json like structure, it may be an array of type definitions,
+or an object of key-type pairs. And both `array` and `object` are also types.
+Some examples:
+
+   * `[u8, u16, u32]` (array of base types)
+   * `{"text": string(255), "id": i32}` (object of base types)
+   * `[{"key": i16}, ...]` (array of objects)
+   * `{"key": [u32, ...]}` (object with array values)
+   * `[u32, ...]` (also called [ellipsis array](#ellipsis-array))
+   * `{"id": i32, ...}` (also called [ellipsis object](#ellipsis-object))
+
+`StatusCode` contains a single or multiple status codes, e.g. `201/200`.
+What's more, status code matcher like `4XX`, `5XX` are also supported.
+
+In standard JSON, schema with a trailing comma (e.g. `{"key": "value",}`) is 
+illegal, but our JSON schema allows this. Because that makes modifications by 
+line convenient.
+
 Base Types
 ----------
 
-- Bool: `bool`
-- Number: `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64`, `float`
-- String: `string`, `string(maxlength)` (e.g. `string(32)`)
+Schema base types are:
 
-Containers
-----------
+* Boolean: `bool`
+* Number: `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64`, `float`
+* String: `string`, `string(maxlength)` (e.g. `string(32)`)
 
-- Array: e.g. `[u8, i32, string]`, `[u8, ...]`
-- Object: e.g. `{"name": string, items: [u8, ...]}`
+Container Types
+---------------
+
+* Array: e.g. `[u8, i32, string]`, `[u8, ...]`. 
+* Object: e.g. `{"name": string(32)}`, `{"id": i32, ...}`.
 
 Ellipsis Array
 --------------
 
-For an example schema::
+An array definition with ellipsis is called "ellipsis array", for an example:
 
-```
-{
-    "items": [u8, ...]
-}
-```
+   ```
+   {
+       "item": [u8, ...]
+   }
+   ```
 
-1. Empty `list` (aka `[]`) passes this schema.
-2. For a given `list`, all its elements should be `u8`.
+   1. Empty list (aka `[]`) is able to pass ellipsis array validation.
+   2. For this example, all elements in given list `items` should be an `u8`.
 
 Ellipsis Object
 ---------------
 
-```
-{
-    "id": i32,
-    ...
-}
-```
+An object definition with ellipsis is called "ellipsis object", for an example:
 
-An object with ellipsis is exactly the same with this object without ellipsis, 
-this feature is useful to indicate this object may contains more fields, but
-the author just don't want to validate or document them.
+   ```
+   {
+       "id": i32,
+       ...
+   }
+   ```
+
+   1. An ellipsis object indicates given object value may contain more fields,
+      but docjson won't (also can't) validate them.
+   2. For a non-ellipsis object definition, given object value shouldn't contain
+      any keys that not exist in the type definition.
 
 Nullable Value
 --------------
 
-By default, values shouldn't be nullable, an example to change this behavior:
+By default, values shouldn't be nullable and `None` value causes validation
+error. An example to change this behavior is:
 
-```
-{
-    "optional-string": string(32)*,
-    "optional-number": i32*
-}
-```
+   ```
+   {
+       "optional-string": string(32)*,
+       "optional-integer": i32*
+   }
+   ```
 
-But `*` can't be used with the whole JSON schema.
+But note that `*` can't be used with the whole request/response json schema, that
+is to say schemas like the following definition are illegal:
 
-No Content Request/Response
-----------------------------
+   ```
+   GET /
+   
+   200
+   {
+       "name": string
+   }*
+   ```
 
-Just leave the schema blank:
+No Content
+----------
+
+Some requests or responses have no content, we just leave the json schema blank:
 
 * Request schema without content example:
 
    ```
    GET /data
    200
-   {"key": i32}
+   {"key": float}
    ```
 
 * Response schema without content example:
@@ -128,12 +234,6 @@ Just leave the schema blank:
    DELETE /data/<i32:id>
    201
    ```
-
-Minor Differences from JSON
----------------------------
-
-In standard JSON, schema with a trailing comma (e.g. `{"key": "value",}`) is illegal,
-but our JSON schema allows this. Because that makes modifications by line convenience.
 
 Language Description
 --------------------
