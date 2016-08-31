@@ -314,6 +314,26 @@ class TestValidation(unittest.TestCase):
         with self.assertRaises(m.ValidationError):
             m.validate_object(val_bad, typ, None)
 
+    def test_validate_object_not_exist_keys_1(self):
+        val_ok = {"name": "name", "value": "value"}
+        val_bad = {"name": "name"}
+        val_bad2 = {"name": "name", "value": "value", "value2": "value2"}
+        typ = {"name": ((m.T_STRING, None), False),
+               "value": ((m.T_STRING, None), False)}
+        assert m.validate_object(val_ok, typ, None) is None
+        with self.assertRaises(m.ValidationError):
+            m.validate_object(val_bad, typ, None)
+        with self.assertRaises(m.ValidationError):
+            m.validate_object(val_bad2, typ, None)
+
+    def test_validate_object_not_exist_keys_2(self):
+        val_ok = {"name": "name", "value": "value"}
+        val_ok2 = {"name": "name", "value": "value", "value2": "value2"}
+        typ = {"name": ((m.T_STRING, None), False),
+               "value": ((m.T_STRING, None), False), m.S_ELLIPSIS: None}
+        assert m.validate_object(val_ok, typ, None) is None
+        assert m.validate_object(val_ok2, typ, None) is None
+
     def test_array_nullable_element_1(self):
         val_ok = [1, None, 2, None]
         val_bad = [1, None, None, None]

@@ -441,7 +441,10 @@ def p_json_schema(p):
 def p_object(p):
     '''object : '{' kv_seq '}'
               | '{' kv_seq ELLIPSIS '}' '''
-    p[0] = dict(p[2])
+    dct = dict(p[2])
+    if len(p) == 5:
+        dct[S_ELLIPSIS] = None
+    p[0] = dct
 
 
 def p_kv_seq(p):
@@ -704,10 +707,16 @@ def validate_object(val, typ, p):
     if not isinstance(val, dict):
         raise_validation_error(p)
     for key, ityp in typ.items():
+        if key == S_ELLIPSIS:
+            continue
         if key not in val:
             raise_validation_error(p)
         ival = val[key]
         validate_value(ival, ityp, p)
+    if S_ELLIPSIS not in typ:
+        for key in val:
+            if key not in typ:
+                raise_validation_error(p)
 
 
 def validate_value(val, typ, p):  # Main entry
