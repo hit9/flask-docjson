@@ -103,28 +103,28 @@ responses.
 `Methods` contains a single or multiple http methods, e.g. `DELETE`, `POST/PUT`
 , all method names should in upper case. Supported method names are:
 
-   * POST
-   * GET
-   * PUT
-   * DELETE
-   * PATCH
-   * HEAd
-   * PATCH
+   * `POST`
+   * `GET`
+   * `PUT`
+   * `DELETE`
+   * `PATCH`
+   * `HEAd`
+   * `PATCH`
 
 `Route` is a flask url rule, but supports stricter variable types. e.g.
 `/user/<i32:id>`, `/name/<string(32):name>`. Note that these types are
 validators but not converters. We still need to use flask built-in converters:
 
-   ```python
-   @app.route("/<int:id>", methods=['GET'])  # OK
-   # @app.route("/<id>", methods=['GET'])  # BAD
-   def get(id):
-       """Schema::
+```python
+@app.route("/<int:id>", methods=['GET'])  # OK
+# @app.route("/<id>", methods=['GET'])  # BAD
+def get(id):
+    """Schema::
 
-           GET /<i32:id>
-           200
-       """
-   ```
+        GET /<i32:id>
+        200
+     """
+```
  
 `JSON-Schema` has json like structure, it may be an array of type definitions,
 or an object of key-type pairs. And both `array` and `object` are also types.
@@ -164,31 +164,31 @@ Ellipsis Array
 
 An array definition with ellipsis is called "ellipsis array", for an example:
 
-   ```
-   {
-       "item": [u8, ...]
-   }
-   ```
+```
+{
+    "item": [u8, ...]
+}
+```
 
-   1. Empty list (aka `[]`) is able to pass ellipsis array validation.
-   2. For this example, all elements in given list `items` should be an `u8`.
+1. Empty list (aka `[]`) is able to pass ellipsis array validation.
+2. For this example, all elements in given list `items` should be an `u8`.
 
 Ellipsis Object
 ---------------
 
 An object definition with ellipsis is called "ellipsis object", for an example:
 
-   ```
-   {
-       "id": i32,
-       ...
-   }
-   ```
+```
+{
+    "id": i32,
+    ...
+}
+```
 
-   1. An ellipsis object indicates given object value may contain more fields,
-      but docjson won't (also can't) validate them.
-   2. For a non-ellipsis object definition, given object value shouldn't contain
-      any keys that not exist in the type definition.
+1. An ellipsis object indicates given object value may contain more fields,
+   but docjson won't (also can't) validate them.
+2. For a non-ellipsis object definition, given object value shouldn't contain
+   any keys that not exist in the type definition.
 
 Nullable Value
 --------------
@@ -196,24 +196,24 @@ Nullable Value
 By default, values shouldn't be nullable and `None` value causes validation
 error. An example to change this behavior is:
 
-   ```
-   {
-       "optional-string": string(32)*,
-       "optional-integer": i32*
-   }
-   ```
+```
+{
+    "optional-string": string(32)*,
+    "optional-integer": i32*
+}
+```
 
 But note that `*` can't be used with the whole request/response json schema, that
 is to say schemas like the following definition are illegal:
 
-   ```
-   GET /
-   
-   200
-   {
-       "name": string
-   }*
-   ```
+```
+GET /
+
+200
+{
+    "name": string
+}*
+```
 
 No Content
 ----------
