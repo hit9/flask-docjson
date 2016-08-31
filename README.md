@@ -108,7 +108,7 @@ responses.
    * `PUT`
    * `DELETE`
    * `PATCH`
-   * `HEAd`
+   * `HEAD`
    * `PATCH`
 
 `Route` is a flask url rule, but supports stricter variable types. e.g.
@@ -147,8 +147,6 @@ line convenient.
 Base Types
 ----------
 
-Schema base types are:
-
 * Boolean: `bool`
 * Number: `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64`, `float`
 * String: `string`, `string(maxlength)` (e.g. `string(32)`)
@@ -171,7 +169,7 @@ An array definition with ellipsis is called "ellipsis array", for an example:
 ```
 
 1. Empty list (aka `[]`) is able to pass ellipsis array validation.
-2. For this example, all elements in given list `items` should be an `u8`.
+2. For this example, all elements in given `items` should be an `u8`.
 
 Ellipsis Object
 ---------------
@@ -188,7 +186,7 @@ An object definition with ellipsis is called "ellipsis object", for an example:
 1. An ellipsis object indicates given object value may contain more fields,
    but docjson won't (also can't) validate them.
 2. For a non-ellipsis object definition, given object value shouldn't contain
-   any keys that not exist in the type definition.
+   any keys that dosen't exist in the type definition.
 
 Nullable Value
 --------------
