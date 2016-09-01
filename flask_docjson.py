@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 
 ###
