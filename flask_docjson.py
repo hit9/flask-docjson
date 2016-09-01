@@ -55,12 +55,25 @@ class GrammerError(ParserError):
 
 class ValidationError(Error):
     """A validation error occurred."""
-    pass
+
+    def __init__(self, code=None, reason=None, value=None):
+        self.code = code
+        self.reason = reason
+        self.value = value
+
+    def __str__(self):
+        try:
+            return 'ValidationError: {0}, {1}: {2}'.format(
+                self.code, self.reason, self.value)
+        except (ValueError, TypeError):
+            return 'ValidationError'
+
+    def __repr__(self):
+        return '<{}>'.format(str(self))
 
 
 class RequestValidationError(ValidationError):
     """A validation error occurred while validating request data."""
-    pass
 
 
 class ResponseValidationError(ValidationError):
@@ -81,6 +94,31 @@ class _InternalLexerError(_InternalError):
 class _InternalGrammerError(_InternalError):
     """Internal used purpose grammer error base."""
 
+
+ErrInvalidBool = (0x0100, "invalid boolean")
+ErrInvalidU8 = (0x0200, "invalid u8")
+ErrInvalidU16 = (0x0300, "invalid u16")
+ErrInvalidU32 = (0x0400, "invalid u32")
+ErrInvalidU64 = (0x0500, "invalid u64")
+ErrInvalidI8 = (0x0600, "invalid i8")
+ErrInvalidI16 = (0x0700, "invalid i16")
+ErrInvalidI32 = (0x0800, "invalid i32")
+ErrInvalidI64 = (0x0900, "invalid i64")
+ErrInvalidFloat = (0x1000, "invalid float")
+ErrInvalidString = (0x1100, "invalid string")
+ErrNotArray = (0x1200, "not an array")
+ErrShouldBeEmptyArray = (0x1201, "should be an empty array")
+ErrArrayElementsNotEnough = (0x1202, "array elements not enough")
+ErrArrayLength = (0x1203, "invalid array length")
+ErrNotObject = (0x1300, "not an object")
+ErrObjectKeyNotFound = (0x1301, "key not found in object")
+ErrObjectUnexpectedKey = (0x1302, "unexpected key in object")
+ErrNullable = (0x1400, "cannot be null")
+ErrShouldBeNull = (0x1401, "should be null")
+ErrInvalidJSON = (0x1500, "invalid json")
+ErrInvalidMethod = (0x1600, "invalid method")
+ErrRouteVarNotFound = (0x1700, "route variable not found")
+ErrInvalidResponse = (0x1800, "invalid response")
 
 ###
 # Schema
@@ -578,80 +616,82 @@ P_REQUEST = 1
 P_RESPONSE = 2
 
 
-def raise_validation_error(p):
+def raise_validation_error(errtyp, value, p):
     if p == P_REQUEST:
-        raise RequestValidationError
+        cls = RequestValidationError
     elif p == P_RESPONSE:
-        raise ResponseValidationError
+        cls = ResponseValidationError
     else:
-        raise ValidationError
+        cls = ValidationError
+    code, reason = errtyp
+    raise cls(code=code, reason=reason, value=value)
 
 
 def validate_bool(val, p):
     if isinstance(val, bool):
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidBool, val, p)
 
 
 def validate_u8(val, p):
     if isinstance(val, int) and ctypes.c_uint8(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidU8, val, p)
 
 
 def validate_u16(val, p):
     if isinstance(val, int) and ctypes.c_uint16(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidU16, val, p)
 
 
 def validate_u32(val, p):
     if isinstance(val, int) and ctypes.c_uint32(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidU32, val, p)
 
 
 def validate_u64(val, p):
     if isinstance(val, (int, long)) and ctypes.c_uint64(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidU64, val, p)
 
 
 def validate_i8(val, p):
     if isinstance(val, int) and ctypes.c_int8(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidI8, val, p)
 
 
 def validate_i16(val, p):
     if isinstance(val, int) and ctypes.c_int16(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidI16, val, p)
 
 
 def validate_i32(val, p):
     if isinstance(val, int) and ctypes.c_int32(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidI32, val, p)
 
 
 def validate_i64(val, p):
     if isinstance(val, (int, long)) and ctypes.c_int64(val).value == val:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidI64, val, p)
 
 
 def validate_float(val, p):
     if isinstance(val, (int, long, float)):
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidFloat, val, p)
 
 
 def validate_string(val, typ, p):
     if isinstance(val, basestring):
         if typ[1] is None or len(val) <= typ[1]:
             return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidString, val, p)
 
 
 def validate_type(val, typ, p):
@@ -681,10 +721,10 @@ def validate_type(val, typ, p):
 
 def validate_array(val, typ, p):
     if not isinstance(val, list):
-        raise_validation_error(p)
+        raise_validation_error(ErrNotArray, val, p)
     if not typ:
         if val:  # Must be empty array
-            raise_validation_error(p)
+            raise_validation_error(ErrShouldBeEmptyArray, val, p)
         return
     for i in range(len(typ)):
         ityp = typ[i]
@@ -696,34 +736,38 @@ def validate_array(val, typ, p):
             return None
         else:
             if i >= len(val):
-                raise_validation_error(p)
+                raise_validation_error(ErrArrayElementsNotEnough, val, p)
             ival = val[i]
             validate_value(ival, ityp, p)
     if len(typ) != len(val):  # No ELLIPSIS
-        raise_validation_error(p)
+        raise_validation_error(ErrArrayLength, val, p)
 
 
 def validate_object(val, typ, p):
     if not isinstance(val, dict):
-        raise_validation_error(p)
+        raise_validation_error(ErrNotObject, val, p)
     for key, ityp in typ.items():
         if key == S_ELLIPSIS:
             continue
         if key not in val:
-            raise_validation_error(p)
+            errtyp = ErrObjectKeyNotFound[0], \
+                "key {} not found in object".format(key)
+            raise_validation_error(errtyp, val, p)
         ival = val[key]
         validate_value(ival, ityp, p)
     if S_ELLIPSIS not in typ:
         for key in val:
             if key not in typ:
-                raise_validation_error(p)
+                errtyp = ErrObjectUnexpectedKey[0], \
+                    "unexpected key {} in object".format(key)
+                raise_validation_error(errtyp, val, p)
 
 
 def validate_value(val, typ, p):  # Main entry
     ityp, nullable = typ
     if val is None:
         if not nullable:
-            raise_validation_error(p)
+            raise_validation_error(ErrNullable, val, p)
         return
     if isinstance(ityp, dict):
         validate_object(val, ityp, p)
@@ -736,12 +780,12 @@ def validate_value(val, typ, p):  # Main entry
 def validate_json(val, typ, p):
     if typ is None:
         if val is not None:
-            raise_validation_error(p)
+            raise_validation_error(ErrShouldBeNull, val, p)
         return
     if isinstance(typ, (list, dict)):
         ityp = (typ, False)  # top json mustn't be null
         return validate_value(val, ityp, p)
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidJSON, val, p)
 
 
 def validate_method(val, typ, p):
@@ -759,14 +803,16 @@ def validate_method(val, typ, p):
         return
     elif val == 'OPTIONS' and M_OPTIONS in typ:
         return
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidMethod, val, p)
 
 
 def validate_route(val, typ, p):
     args_typ = typ[1]
     for key, ityp in args_typ.items():
         if key not in val:
-            raise_validation_error(p)
+            errtyp = ErrRouteVarNotFound[0], \
+                'route variable {} not found in route args'.format(key)
+            raise_validation_error(errty, val, p)
         ival = val[key]
         validate_type(ival, ityp, p)
 
@@ -793,7 +839,7 @@ def match_status_code(matcher, code):
 def validate_response(val, typ):
     p = P_RESPONSE
     if not isinstance(val, Response):
-        raise_validation_error(p)
+        raise_validation_error(ErrInvalidResponse, val, p)
     status_code = val.status_code
     data = val.get_data()
     if data:
@@ -812,7 +858,7 @@ def validate_response(val, typ):
                     return
                 elif json_typ is not None and response_json is not None:
                     return validate_json(response_json, json_typ, p)
-    raise_validation_error(p)
+    raise_validation_error(ErrInvalidResponse, val, p)
 
 
 def validate(func):

@@ -248,13 +248,13 @@ Exceptions
 won't be raised during processing requests.
 
 `ValidationError` should be catched manually, we recommend to use the
-flask built-in decorator `app.errorhandler`. And we can also get `code` and
-`reason` from a `ValidationError` instance:
+flask built-in decorator `app.errorhandler`. And we can also get `code`,
+`reason` and related `value` from a `ValidationError` instance:
 
 ```python
 @app.errorhandler(flask_docjson.ValidationError)
 def on_validatino_error(err):
-    return jsonify(message='Validation error:{0} {1}'.format(err.code, err.reason)), 400
+    return jsonify(message='Validation error:{0} {1} on {2}'.format(err.code, err.reason, err.value)), 400
 ```
 
 Language Description

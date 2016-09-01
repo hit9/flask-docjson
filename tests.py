@@ -178,50 +178,60 @@ class TestValidation(unittest.TestCase):
 
     def test_validate_bool(self):
         assert m.validate_bool(True, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_bool(1, None)
+        assert exc.exception.code == m.ErrInvalidBool[0]
 
     def test_validate_u8(self):
         assert m.validate_u8(199, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_u8(1999, None)
+        assert exc.exception.code == m.ErrInvalidU8[0]
 
     def test_validate_u16(self):
         assert m.validate_u16(65535, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_u16(65535*2, None)
+        assert exc.exception.code == m.ErrInvalidU16[0]
 
     def test_validate_u32(self):
         assert m.validate_u32(4294967295, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_u32(4294967296, None)
+        assert exc.exception.code == m.ErrInvalidU32[0]
 
     def test_validate_u64(self):
         assert m.validate_u64(0xffffffffffffffff, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_u64(0xffffffffffffffff + 1, None)
+        assert exc.exception.code == m.ErrInvalidU64[0]
 
     def test_validate_float(self):
         assert m.validate_float(0.1, None) is None
         assert m.validate_float(1, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_float('1', None)
+        assert exc.exception.code == m.ErrInvalidFloat[0]
 
     def test_validate_string(self):
         assert m.validate_string('test', (m.T_STRING, None), None) is None
         assert m.validate_string('test', (m.T_STRING, 4), None) is None
         assert m.validate_string(u'unicode', (m.T_STRING, None), None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_string(1, (m.T_STRING, None), None)
-        with self.assertRaises(m.ValidationError):
+        assert exc.exception.code == m.ErrInvalidString[0]
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_string("test", (m.T_STRING, 3), None)
+        assert exc.exception.code == m.ErrInvalidString[0]
 
     def test_validate_type(self):
         assert m.validate_type(18, m.T_I8, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_type(1888, m.T_I8, None)
-        with self.assertRaises(m.ValidationError):
+        assert exc.exception.code == m.ErrInvalidI8[0]
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_type(19, (m.T_STRING, 31), None)
+        assert exc.exception.code == m.ErrInvalidString[0]
         assert m.validate_type('abc', (m.T_STRING, 3), None) is None
 
     def test_validate_array_case_simple_1(self):
@@ -229,8 +239,9 @@ class TestValidation(unittest.TestCase):
         val_bad = [1, 2, 3, 4, 256]
         typ = [(m.T_U8, False), m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
-        with self.assertRaises(m.ValidationError):
+        with self.assertRaises(m.ValidationError) as exc:
             m.validate_array(val_bad, typ, None)
+        assert exc.exception.code == m.ErrInvalidU8[0]
 
     def test_validate_array_case_simple_2(self):
         val_ok = ["abc", "efg", "hij"]
