@@ -812,7 +812,7 @@ def validate_route(val, typ, p):
         if key not in val:
             errtyp = ErrRouteVarNotFound[0], \
                 'route variable {} not found in route args'.format(key)
-            raise_validation_error(errty, val, p)
+            raise_validation_error(errtyp, val, p)
         ival = val[key]
         validate_type(ival, ityp, p)
 
