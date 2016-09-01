@@ -233,6 +233,30 @@ Some requests or responses have no content, we just leave the json schema blank:
    201
    ```
 
+Exceptions
+----------
+
+* `flask_docjson.Error`: Raised when a flask-docjson error occurred.
+* `flask_docjson.ParserError`: Raised when parser error occurred.
+* `flask_docjson.LexerError`: Raised when lexer error (e.g. bad token) occurred.
+* `flask_docjson.GrammerError`: Raised when grammer error occurred.
+* `flask_docjson.ValidationError`: Raised when request or response data is invalid.
+* `flask_docjson.RequestValidationError`: Raised when request data is invalid.
+* `flask_docjson.ResponseValidationError`: Raised when response data is invalid.
+
+`Error` is the base exception. `ParserError` only occurrs on flask app bootstrap, it
+won't be raised during processing requests.
+
+`ValidationError` should be catched manually, we recommend to use the
+flask built-in decorator `app.errorhandler`. And we can also get `code` and
+`reason` from `ValidationError`:
+
+```python
+@app.errorhandler(flask_docjson.ValidationError)
+def on_validatino_error(err):
+    return jsonify(message='Validation error:{0} {1}'.format(err.code, err.reason)), 400
+```
+
 Language Description
 --------------------
 
