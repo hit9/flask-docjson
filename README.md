@@ -239,7 +239,7 @@ Exceptions
 * `flask_docjson.Error`: Raised when a flask-docjson error occurred.
 * `flask_docjson.ParserError`: Raised when a parser error occurred.
 * `flask_docjson.LexerError`: Raised when a lexer error (e.g. bad token) occurred.
-* `flask_docjson.GrammerError`: Raised when a grammer error occurred.
+* `flask_docjson.GrammarError`: Raised when a grammar error occurred.
 * `flask_docjson.ValidationError`: Raised when some request or response data is invalid.
 * `flask_docjson.RequestValidationError`: Raised some when request data is invalid.
 * `flask_docjson.ResponseValidationError`: Raised some when response data is invalid.

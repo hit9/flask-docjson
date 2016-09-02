@@ -148,7 +148,7 @@ class TestParser(unittest.TestCase):
                 ...
             ]
         """
-        with self.assertRaises(m._InternalGrammerError):
+        with self.assertRaises(m._InternalGrammarError):
             m.parse(self.test_bad_status_code_matcher.__doc__)
 
     def test_nullable_schema(self):

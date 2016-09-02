@@ -48,8 +48,8 @@ class LexerError(ParserError):
     pass
 
 
-class GrammerError(ParserError):
-    """A grammer error occurred."""
+class GrammarError(ParserError):
+    """A grammar error occurred."""
     pass
 
 
@@ -91,8 +91,8 @@ class _InternalLexerError(_InternalError):
     pass
 
 
-class _InternalGrammerError(_InternalError):
-    """Internal used purpose grammer error base."""
+class _InternalGrammarError(_InternalError):
+    """Internal used purpose grammar error base."""
 
 
 ErrInvalidBool = (0x0100, "invalid boolean")
@@ -373,8 +373,8 @@ def _parse_seq(p):
 
 def p_error(p):
     if p is None:
-        raise _InternalGrammerError('grammer error at EOF')
-    raise _InternalGrammerError('grammer error %r at line %d' % (p.value,
+        raise _InternalGrammarError('grammar error at EOF')
+    raise _InternalGrammarError('grammar error %r at line %d' % (p.value,
                                                                  p.lineno))
 
 
@@ -605,8 +605,8 @@ def parse_from_func(func):
                                     str(exc))
         if isinstance(exc, _InternalLexerError):
             raise LexerError(msg)
-        elif isinstance(exc, _InternalGrammerError):
-            raise GrammerError(msg)
+        elif isinstance(exc, _InternalGrammarError):
+            raise GrammarError(msg)
         else:
             raise ParserError(msg)
 
