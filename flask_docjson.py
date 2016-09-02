@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
 
 ###
@@ -838,15 +838,22 @@ def match_status_code(matcher, code):
 
 def validate_response(val, typ):
     p = P_RESPONSE
-    if not isinstance(val, Response):
+    if isinstance(val, basestring):
+        status_code = 200
+        data = val
+    elif isinstance(val, Response):
+        status_code = val.status_code
+        data = val.get_data()
+    elif isinstance(val, (tuple, list)):
+        data = val[0]
+        status_code = val[1]
+    else:
         raise_validation_error(ErrInvalidResponse, val, p)
-    status_code = val.status_code
-    data = val.get_data()
     if data:
         try:
             response_json = json.loads(data)
         except ValueError:
-            raise ValidationError
+            raise_validation_error(ErrInvalidResponse, val, p)
     else:
         response_json = None
     for response_typ in typ:
@@ -854,9 +861,9 @@ def validate_response(val, typ):
         json_typ = response_typ['schema']
         for code_matcher in code_matchers:
             if match_status_code(code_matcher, status_code):
-                if json_typ is None and response_json is None:
+                if json_typ is None and not response_json:  # Enable empty string''  # noqa
                     return
-                elif json_typ is not None and response_json is not None:
+                elif json_typ is not None and response_json:
                     return validate_json(response_json, json_typ, p)
     raise_validation_error(ErrInvalidResponse, val, p)
 

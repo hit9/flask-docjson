@@ -2,6 +2,7 @@
 
 import unittest
 import flask_docjson as m
+from flask import Response
 
 
 class TestParser(unittest.TestCase):
@@ -392,6 +393,11 @@ class TestValidation(unittest.TestCase):
         assert not m.match_status_code('4XX', 504)
         assert m.match_status_code(404, 404)
         assert not m.match_status_code(404, 401)
+
+    def test_validate_empty_string_response(self):
+        assert m.validate_response(Response('', 201), [{'status_code': [201],
+                                                        'schema': None}]) is \
+            None
 
 
 if __name__ == '__main__':
