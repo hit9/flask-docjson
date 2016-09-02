@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 
 ###
@@ -576,8 +576,8 @@ def parse(data):
                 block_start = True
             continue
         if not line or line.isspace() \
-                or line.startswith('\t') \
-                or line.startswith('    '):
+                or line.startswith('\t'*2) \
+                or line.startswith(' '*8):
             lines.append(line)
         else:
             break
