@@ -174,6 +174,23 @@ class TestParser(unittest.TestCase):
             ]
         }
 
+    def test_empty_response(self):
+        """Schema::
+
+            DELETE /user/<i32:id>
+            201
+            4XX/5XX
+            {"error": string}
+        """
+        schema = m.parse(self.test_empty_response.__doc__)
+        assert schema == {'request': {'methods': [4],
+                                      'route': ['/user/<id>', {'id': 8}],
+                                      'schema': None},
+                          'responses': [{'schema': None, 'status_code': [201]},
+                                        {'schema': {'error': ((11, None),
+                                                              False)},
+                                         'status_code': ['4XX', '5XX']}]}
+
 
 class TestValidation(unittest.TestCase):
 
@@ -286,7 +303,8 @@ class TestValidation(unittest.TestCase):
                    ]
         typ = [({"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)},
                 False),
-               ({"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)}, False)]
+               ({"name": ((m.T_STRING, 4), False), "id": (m.T_I32, False)},
+                False)]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -294,7 +312,8 @@ class TestValidation(unittest.TestCase):
     def test_validate_array_nested(self):
         val_ok = [{"child": [15, 16, 17]}, {"child": [25, 26, 37]}]
         val_bad = [{"child": [15, 16, 17]}, {"child": [25, 266, 37]}]
-        typ = [({"child": ([(m.T_U8, False), m.S_ELLIPSIS], False)}, False), m.S_ELLIPSIS]
+        typ = [({"child": ([(m.T_U8, False), m.S_ELLIPSIS], False)}, False),
+               m.S_ELLIPSIS]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -349,7 +368,8 @@ class TestValidation(unittest.TestCase):
     def test_array_nullable_element_1(self):
         val_ok = [1, None, 2, None]
         val_bad = [1, None, None, None]
-        typ = [(m.T_U8, False), (m.T_U8, True), (m.T_U8, False), (m.T_U8, True)]
+        typ = [(m.T_U8, False), (m.T_U8, True), (m.T_U8, False), (m.T_U8,
+                                                                  True)]
         assert m.validate_array(val_ok, typ, None) is None
         with self.assertRaises(m.ValidationError):
             m.validate_array(val_bad, typ, None)
@@ -397,6 +417,9 @@ class TestValidation(unittest.TestCase):
     def test_validate_empty_string_response(self):
         assert m.validate_response(Response('', 201), [{'status_code': [201],
                                                         'schema': None}]) is \
+            None
+        assert m.validate_response(('', 201), [{'status_code': [201],
+                                                'schema': None}]) is \
             None
 
 

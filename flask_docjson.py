@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 
 
 ###
@@ -365,6 +365,8 @@ def _parse_seq(p):
         p[0] = [p[1]] + p[3]
     elif len(p) == 3:
         p[0] = [p[1]] + p[2]
+    elif len(p) == 2:
+        p[0] = [p[1]]
     elif len(p) == 1:
         p[0] = []
 
@@ -459,7 +461,7 @@ def p_response_item(p):
 
 def p_status_code_seq(p):
     '''status_code_seq : status_code_item '/' status_code_seq
-                       | status_code_item status_code_seq
+                       | status_code_item
                        |'''
     _parse_seq(p)
 
@@ -575,6 +577,7 @@ def parse(data):
                     'Schema:' in line:
                 block_start = True
             continue
+
         if not line or line.isspace() \
                 or line.startswith('\t'*2) \
                 or line.startswith(' '*8):
