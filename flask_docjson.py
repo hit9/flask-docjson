@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.0.9'
+__version__ = '0.1.0'
 
 
 ###
@@ -571,19 +571,24 @@ def parse(data):
         return None
     block_start = False
     lines = []
+    ident = None
     for line in data.splitlines():
         if not block_start:
             if 'Schema::' in line or \
                     'Schema:' in line:
                 block_start = True
             continue
-
-        if not line or line.isspace() \
-                or line.startswith('\t'*2) \
-                or line.startswith(' '*8):
+        if not line or line.isspace():
+            continue  # skip space or empty lines
+        _ident = len(line) - len(line.lstrip())
+        if ident is None:
+            ident = _ident
             lines.append(line)
         else:
-            break
+            if ident <= _ident:
+                lines.append(line)
+            else:
+                break
     if block_start:
         return parse_schema('\n'.join(lines))
     return None
