@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 ###
@@ -28,6 +28,16 @@ if sys.version_info.major == 3:
     basestring = (str, bytes)
     unicode = str
     long = int
+
+    def json_loads(data):
+        if isinstance(data, bytes):
+            data = str(data, 'utf8')
+        return json.loads(data)
+
+else:
+
+    def json_loads(data):
+        return json.loads(data)
 
 
 ###
@@ -859,7 +869,7 @@ def validate_response(val, typ):
         raise_validation_error(ErrInvalidResponse, val, p)
     if data:
         try:
-            response_json = json.loads(data)
+            response_json = json.loads(str(data, 'utf8'))
         except ValueError:
             raise_validation_error(ErrInvalidResponse, val, p)
     else:
