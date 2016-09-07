@@ -109,7 +109,7 @@ responses.
    * `DELETE`
    * `PATCH`
    * `HEAD`
-   * `PATCH`
+   * `OPTIONS`
 
 `Route` is a flask url rule, but supports stricter variable types. e.g.
 `/user/<i32:id>`, `/name/<string(32):name>`. Note that these types are
