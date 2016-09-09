@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 ###
@@ -768,6 +768,9 @@ def validate_object(val, typ, p):
         if key == S_ELLIPSIS:
             continue
         if key not in val:
+            _, nullable = ityp
+            if nullable:
+                continue
             errtyp = ErrObjectKeyNotFound[0], \
                 "key {} not found in object".format(key)
             raise_validation_error(errtyp, val, p)

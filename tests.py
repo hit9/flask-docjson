@@ -365,6 +365,15 @@ class TestValidation(unittest.TestCase):
         assert m.validate_object(val_ok, typ, None) is None
         assert m.validate_object(val_ok2, typ, None) is None
 
+    def test_validate_object_nullable_key_can_not_exist(self):
+        val_ok = {"name": "name"}
+        val_bad = {"value": "value"}
+        typ = {"name": ((m.T_STRING, None), False),
+               "value": ((m.T_STRING, None), True)}
+        assert m.validate_object(val_ok, typ, None) is None
+        with self.assertRaises(m.ValidationError):
+            m.validate_object(val_bad, typ, None)
+
     def test_array_nullable_element_1(self):
         val_ok = [1, None, 2, None]
         val_bad = [1, None, None, None]

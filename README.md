@@ -201,6 +201,8 @@ error. An example to change this behavior is:
 }
 ```
 
+And, nullable values are optional in objects, `key not exists` error won't throw.
+
 But note that `*` can't be used with the whole request/response json schema, that
 is to say schemas like the following definition are illegal:
 
