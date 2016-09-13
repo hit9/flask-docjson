@@ -34,7 +34,6 @@ if sys.version_info.major == 3:
             data = str(data, 'utf8')
         return json.loads(data)
 
-
     def get_func_code(func):
         return func.__code__
 
@@ -42,7 +41,6 @@ else:
 
     def json_loads(data):
         return json.loads(data)
-
 
     def get_func_code(func):
         return func.func_code
