@@ -34,10 +34,18 @@ if sys.version_info.major == 3:
             data = str(data, 'utf8')
         return json.loads(data)
 
+
+    def get_func_code(func):
+        return func.__code__
+
 else:
 
     def json_loads(data):
         return json.loads(data)
+
+
+    def get_func_code(func):
+        return func.func_code
 
 
 ###
@@ -614,9 +622,10 @@ def parse_from_func(func):
     try:
         return parse(data)
     except _InternalError as exc:
-        msg = '{}:{}:{}: {}'.format(func.func_code.co_filename,
-                                    func.func_code.co_firstlineno,
-                                    func.func_code.co_name,
+        func_code = get_func_code(func)
+        msg = '{}:{}:{}: {}'.format(func_code.co_filename,
+                                    func_code.co_firstlineno,
+                                    func_code.co_name,
                                     str(exc))
         if isinstance(exc, _InternalLexerError):
             raise LexerError(msg)
