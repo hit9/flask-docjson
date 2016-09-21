@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 ###
@@ -889,9 +889,12 @@ def validate_response(val, typ):
         json_typ = response_typ['schema']
         for code_matcher in code_matchers:
             if match_status_code(code_matcher, status_code):
-                if json_typ is None and not response_json:  # Enable empty string''  # noqa
-                    return
-                elif json_typ is not None and response_json:
+                if json_typ is None:
+                    if response_json is None:
+                        return
+                    if response_json == '':
+                        return  # Enable empty string''  # noqa
+                elif json_typ is not None and response_json is not None:
                     return validate_json(response_json, json_typ, p)
     raise_validation_error(ErrInvalidResponse, val, p)
 
