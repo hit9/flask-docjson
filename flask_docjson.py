@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 
 ###
@@ -750,6 +750,8 @@ def validate_array(val, typ, p):
     if not typ:
         if val:  # Must be empty array
             raise_validation_error(ErrShouldBeEmptyArray, val, p)
+        return
+    if typ[0] == S_ELLIPSIS:
         return
     for i in range(len(typ)):
         ityp = typ[i]

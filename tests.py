@@ -388,6 +388,11 @@ class TestValidation(unittest.TestCase):
         typ = [(m.T_U8, True), m.S_ELLIPSIS]
         assert m.validate_array(val, typ, None) is None
 
+    def test_array_ellipsis_only(self):
+        typ = [m.S_ELLIPSIS]
+        val = [1, 2, 3]
+        assert m.validate_array(val, typ, None) is None
+
     def test_validate_json_None(self):
         assert m.validate_json(None, None, None) is None
         with self.assertRaises(m.ValidationError):
