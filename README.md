@@ -137,7 +137,7 @@ Some examples:
    * `[u32, ...]` (also called [ellipsis array](#ellipsis-array))
    * `{"id": i32, ...}` (also called [ellipsis object](#ellipsis-object))
 
-`StatusCode` contains a single or multiple status codes, e.g. `201/200`.
+`StatusCode` contains a single or multiple status codes, e.g. `204/200`.
 What's more, status code matcher like `4XX`, `5XX` are also supported.
 
 In standard JSON, schema with a trailing comma (e.g. `{"key": "value",}`) is 
@@ -232,7 +232,7 @@ Some requests or responses have no content, we just leave the json schema blank:
 
    ```
    DELETE /data/<i32:id>
-   201
+   204
    ```
 
 Comments
