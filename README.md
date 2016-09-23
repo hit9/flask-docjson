@@ -235,6 +235,24 @@ Some requests or responses have no content, we just leave the json schema blank:
    201
    ```
 
+Comments
+--------
+
+We may want to comment on some json fields:
+
+```
+PUT /order
+{
+    "price": float, // precision:10, scale:2
+}
+
+200
+{
+    "id": i32,
+     ...
+}
+```
+
 Exceptions
 ----------
 

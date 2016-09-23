@@ -13,7 +13,7 @@ class TestParser(unittest.TestCase):
             POST/PUT /item
             {
                 "name": string,
-                "number": i16,
+                "number": i16,  // a simple number
                 "children": [
                     {"id": i32},
                     ...

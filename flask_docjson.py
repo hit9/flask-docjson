@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 
 ###
@@ -202,6 +202,10 @@ tokens = (
 def t_error(t):
     raise _InternalLexerError('illegal char %r at line %d' % (t.value[0],
                                                               t.lineno))
+
+
+def t_ignore_COMMENT(t):
+    r'\/\/[^\n]*'
 
 
 def t_newline(t):
