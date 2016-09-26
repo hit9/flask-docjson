@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 
 
 ###
@@ -72,15 +72,16 @@ class GrammarError(ParserError):
 class ValidationError(Error):
     """A validation error occurred."""
 
-    def __init__(self, code=None, reason=None, value=None):
+    def __init__(self, code=None, reason=None, value=None, key=None):
         self.code = code
         self.reason = reason
         self.value = value
+        self.key = key
 
     def __str__(self):
         try:
-            return 'ValidationError: {0}, {1}: {2}'.format(
-                self.code, self.reason, self.value)
+            return 'ValidationError: {0}, {1}, {2} => {3}'.format(
+                self.code, self.reason, repr(self.key or ''), repr(self.value))
         except (ValueError, TypeError):
             return 'ValidationError'
 
@@ -645,7 +646,7 @@ P_REQUEST = 1
 P_RESPONSE = 2
 
 
-def raise_validation_error(errtyp, value, p):
+def raise_validation_error(errtyp, value, p, key=None):
     if p == P_REQUEST:
         cls = RequestValidationError
     elif p == P_RESPONSE:
@@ -653,107 +654,107 @@ def raise_validation_error(errtyp, value, p):
     else:
         cls = ValidationError
     code, reason = errtyp
-    raise cls(code=code, reason=reason, value=value)
+    raise cls(code=code, reason=reason, value=value, key=key)
 
 
-def validate_bool(val, p):
+def validate_bool(val, p, key=None):
     if isinstance(val, bool):
         return
-    raise_validation_error(ErrInvalidBool, val, p)
+    raise_validation_error(ErrInvalidBool, val, p, key=key)
 
 
-def validate_u8(val, p):
+def validate_u8(val, p, key=None):
     if isinstance(val, int) and ctypes.c_uint8(val).value == val:
         return
-    raise_validation_error(ErrInvalidU8, val, p)
+    raise_validation_error(ErrInvalidU8, val, p, key=key)
 
 
-def validate_u16(val, p):
+def validate_u16(val, p, key=None):
     if isinstance(val, int) and ctypes.c_uint16(val).value == val:
         return
-    raise_validation_error(ErrInvalidU16, val, p)
+    raise_validation_error(ErrInvalidU16, val, p, key=key)
 
 
-def validate_u32(val, p):
+def validate_u32(val, p, key=None):
     if isinstance(val, int) and ctypes.c_uint32(val).value == val:
         return
-    raise_validation_error(ErrInvalidU32, val, p)
+    raise_validation_error(ErrInvalidU32, val, p, key=key)
 
 
-def validate_u64(val, p):
+def validate_u64(val, p, key=None):
     if isinstance(val, (int, long)) and ctypes.c_uint64(val).value == val:
         return
-    raise_validation_error(ErrInvalidU64, val, p)
+    raise_validation_error(ErrInvalidU64, val, p, key=key)
 
 
-def validate_i8(val, p):
+def validate_i8(val, p, key=None):
     if isinstance(val, int) and ctypes.c_int8(val).value == val:
         return
-    raise_validation_error(ErrInvalidI8, val, p)
+    raise_validation_error(ErrInvalidI8, val, p, key=key)
 
 
-def validate_i16(val, p):
+def validate_i16(val, p, key=None):
     if isinstance(val, int) and ctypes.c_int16(val).value == val:
         return
-    raise_validation_error(ErrInvalidI16, val, p)
+    raise_validation_error(ErrInvalidI16, val, p, key=key)
 
 
-def validate_i32(val, p):
+def validate_i32(val, p, key=None):
     if isinstance(val, int) and ctypes.c_int32(val).value == val:
         return
-    raise_validation_error(ErrInvalidI32, val, p)
+    raise_validation_error(ErrInvalidI32, val, p, key=key)
 
 
-def validate_i64(val, p):
+def validate_i64(val, p, key=None):
     if isinstance(val, (int, long)) and ctypes.c_int64(val).value == val:
         return
-    raise_validation_error(ErrInvalidI64, val, p)
+    raise_validation_error(ErrInvalidI64, val, p, key=key)
 
 
-def validate_float(val, p):
+def validate_float(val, p, key=None):
     if isinstance(val, (int, long, float)):
         return
-    raise_validation_error(ErrInvalidFloat, val, p)
+    raise_validation_error(ErrInvalidFloat, val, p, key=key)
 
 
-def validate_string(val, typ, p):
+def validate_string(val, typ, p, key=None):
     if isinstance(val, basestring):
         if typ[1] is None or len(val) <= typ[1]:
             return
-    raise_validation_error(ErrInvalidString, val, p)
+    raise_validation_error(ErrInvalidString, val, p, key=key)
 
 
-def validate_type(val, typ, p):
+def validate_type(val, typ, p, key=None):
     if typ == T_BOOL:
-        return validate_bool(val, p)
+        return validate_bool(val, p, key=key)
     elif typ == T_U8:
-        return validate_u8(val, p)
+        return validate_u8(val, p, key=key)
     elif typ == T_U16:
-        return validate_u16(val, p)
+        return validate_u16(val, p, key=key)
     elif typ == T_U32:
-        return validate_u32(val, p)
+        return validate_u32(val, p, key=key)
     elif typ == T_U64:
-        return validate_u64(val, p)
+        return validate_u64(val, p, key=key)
     elif typ == T_I8:
-        return validate_i8(val, p)
+        return validate_i8(val, p, key=key)
     elif typ == T_I16:
-        return validate_i16(val, p)
+        return validate_i16(val, p, key=key)
     elif typ == T_I32:
-        return validate_i32(val, p)
+        return validate_i32(val, p, key=key)
     elif typ == T_I64:
-        return validate_i64(val, p)
+        return validate_i64(val, p, key=key)
     elif typ == T_FLOAT:
-        return validate_float(val, p)
+        return validate_float(val, p, key=key)
     elif isinstance(typ, tuple) and typ[0] == T_STRING:
-        return validate_string(val, typ, p)
+        return validate_string(val, typ, p, key=key)
 
 
-def validate_array(val, typ, p):
+def validate_array(val, typ, p, key=None):
     if not isinstance(val, list):
-        raise_validation_error(ErrNotArray, val, p)
+        raise_validation_error(ErrNotArray, val, p, key=key)
     if not typ:
         if val:  # Must be empty array
-            raise_validation_error(ErrShouldBeEmptyArray, val, p)
+            raise_validation_error(ErrShouldBeEmptyArray, val, p, key=key)
         return
     if typ[0] == S_ELLIPSIS:
         return
@@ -763,63 +764,66 @@ def validate_array(val, typ, p):
             while i < len(val):
                 ival = val[i]
                 i += 1
-                validate_value(ival, ityp, p)
+                validate_value(ival, ityp, p, key='{0}[{1}]'.format(key, i))
             return None
         else:
             if i >= len(val):
-                raise_validation_error(ErrArrayElementsNotEnough, val, p)
+                raise_validation_error(ErrArrayElementsNotEnough, val, p,
+                                       key=key)
             ival = val[i]
-            validate_value(ival, ityp, p)
+            validate_value(ival, ityp, p, key='{0}[{1}]'.format(key, i))
     if len(typ) != len(val):  # No ELLIPSIS
-        raise_validation_error(ErrArrayLength, val, p)
+        raise_validation_error(ErrArrayLength, val, p, key=key)
 
 
-def validate_object(val, typ, p):
+def validate_object(val, typ, p, key=None):
     if not isinstance(val, dict):
-        raise_validation_error(ErrNotObject, val, p)
-    for key, ityp in typ.items():
-        if key == S_ELLIPSIS:
+        raise_validation_error(ErrNotObject, val, p, key=key)
+    for ikey, ityp in typ.items():
+        if ikey == S_ELLIPSIS:
             continue
-        if key not in val:
+        if ikey not in val:
             _, nullable = ityp
             if nullable:
                 continue
             errtyp = ErrObjectKeyNotFound[0], \
-                "key {} not found in object".format(key)
-            raise_validation_error(errtyp, val, p)
-        ival = val[key]
-        validate_value(ival, ityp, p)
+                "key {} not found in object".format(ikey)
+            raise_validation_error(errtyp, val, p,
+                                   key='{0}.{1}'.format(key, ikey))
+        ival = val[ikey]
+        validate_value(ival, ityp, p, key='{0}.{1}'.format(key, ikey))
     if S_ELLIPSIS not in typ:
-        for key in val:
-            if key not in typ:
+        for ikey in val:
+            if ikey not in typ:
                 errtyp = ErrObjectUnexpectedKey[0], \
-                    "unexpected key {} in object".format(key)
-                raise_validation_error(errtyp, val, p)
+                    "unexpected key {} in object".format(ikey)
+                raise_validation_error(errtyp, val, p,
+                                       key='{0}.{1}'.format(key, ikey))
 
 
-def validate_value(val, typ, p):  # Main entry
+def validate_value(val, typ, p, key=None):  # Main entry
     ityp, nullable = typ
     if val is None:
         if not nullable:
-            raise_validation_error(ErrNullable, val, p)
+            raise_validation_error(ErrNullable, val, p, key=key)
         return
     if isinstance(ityp, dict):
-        validate_object(val, ityp, p)
+        validate_object(val, ityp, p, key=key)
     elif isinstance(ityp, list):
-        validate_array(val, ityp, p)
+        validate_array(val, ityp, p, key=key)
     else:
-        validate_type(val, ityp, p)
+        validate_type(val, ityp, p, key=key)
 
 
-def validate_json(val, typ, p):
+def validate_json(val, typ, p, key=None):
     if typ is None:
         if val is not None:
-            raise_validation_error(ErrShouldBeNull, val, p)
+            raise_validation_error(ErrShouldBeNull, val, p, key=key)
         return
     if isinstance(typ, (list, dict)):
         ityp = (typ, False)  # top json mustn't be null
-        return validate_value(val, ityp, p)
-    raise_validation_error(ErrInvalidJSON, val, p)
+        return validate_value(val, ityp, p, key=key)
+    raise_validation_error(ErrInvalidJSON, val, p, key=key)
 
 
 def validate_method(val, typ, p):
@@ -854,7 +858,7 @@ def validate_route(val, typ, p):
 def validate_request(typ):
     validate_method(request.method, typ['methods'], P_REQUEST)
     validate_route(request.view_args, typ['route'], P_REQUEST)
-    validate_json(request.get_json(), typ['schema'], P_REQUEST)
+    validate_json(request.get_json(), typ['schema'], P_REQUEST, key='')
 
 
 def match_status_code(matcher, code):
@@ -901,7 +905,8 @@ def validate_response(val, typ):
                     if response_json == '':
                         return  # Enable empty string''  # noqa
                 elif json_typ is not None and response_json is not None:
-                    return validate_json(response_json, json_typ, p)
+                    return validate_json(response_json, json_typ, p,
+                                         key='')
     raise_validation_error(ErrInvalidResponse, val, p)
 
 

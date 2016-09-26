@@ -10,6 +10,7 @@ app = Flask(__name__)
 def on_request_validation_error(err):
     """Returns bad request on request validation errors.
     """
+    print(err)
     return jsonify(message='Bad request'), 400
 
 
