@@ -17,7 +17,7 @@ import sys
 from flask import request, Response
 from ply import lex, yacc
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 
 
 ###
@@ -571,13 +571,13 @@ def p_string_type(p):
         p[0] = (T_STRING, p[3])
 
 
-lexer = lex.lex()
-parser = yacc.yacc(debug=False, write_tables=0)
-
-
 def parse_schema(data):
     """Parse schema string to schema dict.
     """
+    # Rebuild `lexer` and `parser` each time.
+    lexer = lex.lex()
+    parser = yacc.yacc(debug=False, write_tables=0)
+
     lexer.lineno = 1
     return parser.parse(data)
 
